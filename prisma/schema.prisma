@@ -1,0 +1,655 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/**
+ * -------------------- ENUMS --------------------
+ */
+enum UserRole {
+  STUDENT
+  COMPANY
+  ADMIN
+}
+
+enum DegreeType {
+  GRADUATE
+  UNDERGRADUATE
+}
+
+enum WorkType {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PostStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  EXPIRED
+}
+
+enum ProficiencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  INTERVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum BoostStatus {
+  SCHEDULED
+  ACTIVE
+  EXPIRED
+}
+
+enum ProductType {
+  COURSE
+  BOOST
+}
+
+enum PaymentUserType {
+  STUDENT
+  COMPANY
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYHERE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum RecommendationContext {
+  STUDENT_FEED
+  COMPANY_RANKING
+}
+
+/**
+ * -------------------- AUTH / STUDENT --------------------
+ */
+model User {
+  id           String   @id @default(uuid())
+  username     String?  @unique
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(STUDENT)
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student?
+  company Company? // optional: if you want login unified through User
+
+  @@map("users")
+}
+
+model Student {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName  String
+  lastName   String
+  address    String?
+  dob        DateTime?
+  institute  String
+  department String
+  degreeType DegreeType
+  grade      String?
+  zScore     Decimal?   @db.Decimal(5, 4)
+
+  githubLink        String?
+  linkedinLink      String?
+  personalPortfolio String?
+
+  createdAt DateTime @default(now())
+
+  resumes Resume[]
+  skills  StudentSkill[]
+
+  applications      Application[]
+  recommendations   RecommendationScore[]
+  mlScores          ApplicationMlScore[]
+  courseEnrollments CourseEnrollment[]
+  lessonProgress    LessonProgress[]
+  payments          Payment[]
+
+  @@map("students")
+}
+
+model Resume {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  filePath   String
+  uploadedAt DateTime @default(now())
+
+  @@index([studentId])
+  @@map("resumes")
+}
+
+/**
+ * ✅ Extra (recommended): Skill dictionary (avoids duplicates React/ReactJS)
+ */
+model Skill {
+  id   String @id @default(uuid())
+  name String @unique
+
+  studentSkills StudentSkill[]
+  postSkills    PostSkill[]
+
+  @@map("skills")
+}
+
+model StudentSkill {
+  id        String @id @default(uuid())
+  studentId String
+  skillId   String
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  level ProficiencyLevel?
+
+  @@unique([studentId, skillId])
+  @@map("student_skills")
+}
+
+/**
+ * -------------------- COMPANY / VERIFICATION --------------------
+ */
+model Company {
+  id             String @id @default(uuid())
+  companyName    String
+  corporateEmail String @unique
+  emailDomain    String
+  passwordHash   String
+
+  isVerified         Boolean            @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  verification CompanyVerification?
+  profile      CompanyProfile?
+  posts        InternshipPost[]
+  boostedPosts BoostedPost[]
+  payments     Payment[]
+
+  @@map("companies")
+}
+
+model CompanyVerification {
+  id        String  @id @default(uuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  verificationToken String
+  tokenExpiresAt    DateTime
+  verifiedAt        DateTime?
+  attemptCount      Int       @default(0)
+  createdAt         DateTime  @default(now())
+
+  @@map("company_verifications")
+}
+
+model CompanyProfile {
+  id        String  @id @default(uuid())
+  companyId String  @unique
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  logoUrl              String?
+  websiteUrl           String?
+  industry             String?
+  companySize          String? // keep as string (e.g. "1-10", "11-50", "500+")
+  foundedYear          Int?
+  headquartersLocation String?
+  description          String?
+  missionStatement     String?
+  workCulture          String?
+  workType             WorkType?
+  benefits             String?
+  linkedinUrl          String?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("company_profiles")
+}
+
+/**
+ * -------------------- INTERNSHIP POSTS --------------------
+ */
+model InternshipPost {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title            String
+  description      String
+  responsibilities String?
+  location         String?
+  workType         WorkType?
+
+  durationMonths  Int?
+  stipendAmount   Decimal? @db.Decimal(10, 2)
+  stipendCurrency String   @default("LKR")
+  isPaid          Boolean  @default(false)
+
+  openingsCount       Int       @default(1)
+  applicationDeadline DateTime
+  startDate           DateTime?
+
+  status PostStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requiredSkills  PostRequiredSkill[]
+  optionalSkills  PostOptionalSkill[]
+  postSkills      PostSkill[] // ✅ extra normalized (optional use)
+  applications    Application[]
+  mlScores        ApplicationMlScore[]
+  analytics       PostApplicantAnalytics?
+  boosted         BoostedPost[]
+  recommendations RecommendationScore[]
+
+  @@index([companyId])
+  @@map("internship_posts")
+}
+
+/**
+ * Doc tables kept (skill_name)
+ */
+model PostRequiredSkill {
+  id     String         @id @default(uuid())
+  postId String
+  post   InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  skillName        String
+  proficiencyLevel ProficiencyLevel
+  createdAt        DateTime         @default(now())
+
+  @@index([postId])
+  @@map("post_required_skills")
+}
+
+model PostOptionalSkill {
+  id     String         @id @default(uuid())
+  postId String
+  post   InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  skillName        String
+  proficiencyLevel ProficiencyLevel
+  createdAt        DateTime         @default(now())
+
+  @@index([postId])
+  @@map("post_optional_skills")
+}
+
+/**
+ * ✅ Extra normalized post skills using Skill dictionary
+ */
+model PostSkill {
+  id       String            @id @default(uuid())
+  postId   String
+  skillId  String
+  required Boolean           @default(true)
+  level    ProficiencyLevel?
+
+  post  InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  skill Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, skillId])
+  @@map("post_skills")
+}
+
+/**
+ * -------------------- APPLICATIONS + ML SCORES --------------------
+ */
+model Application {
+  id        String @id @default(uuid())
+  postId    String
+  studentId String
+
+  post    InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  coverLetter String?
+  cvUrl       String?
+
+  status ApplicationStatus @default(APPLIED)
+
+  isViewedByCompany Boolean   @default(false)
+  viewedAt          DateTime?
+  companyNote       String?
+
+  appliedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mlScore ApplicationMlScore?
+
+  @@unique([postId, studentId])
+  @@index([postId])
+  @@index([studentId])
+  @@map("applications")
+}
+
+model ApplicationMlScore {
+  id            String      @id @default(uuid())
+  applicationId String      @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  postId    String
+  studentId String
+  post      InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student   Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  overallScore        Decimal @db.Decimal(5, 2)
+  requiredSkillsScore Decimal @db.Decimal(5, 2)
+  optionalSkillsScore Decimal @db.Decimal(5, 2)
+  experienceScore     Decimal @db.Decimal(5, 2)
+  educationScore      Decimal @db.Decimal(5, 2)
+
+  rankPosition Int
+
+  matchedRequiredSkills String
+  matchedOptionalSkills String
+  missingRequiredSkills String
+  matchReasonSummary    String
+
+  isRecommended Boolean  @default(false)
+  calculatedAt  DateTime @default(now())
+
+  @@index([postId])
+  @@index([studentId])
+  @@map("application_ml_scores")
+}
+
+model PostApplicantAnalytics {
+  id     String         @id @default(uuid())
+  postId String         @unique
+  post   InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  totalApplicants  Int @default(0)
+  totalViewed      Int @default(0)
+  totalShortlisted Int @default(0)
+  totalInterview   Int @default(0)
+  totalAccepted    Int @default(0)
+  totalRejected    Int @default(0)
+
+  avgMatchScore     Decimal?  @db.Decimal(5, 2)
+  topApplicantScore Decimal?  @db.Decimal(5, 2)
+  lastApplicationAt DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("post_applicant_analytics")
+}
+
+/**
+ * ✅ Extra ML table: one table supports Student feed + Company ranking
+ */
+model RecommendationScore {
+  id        String                @id @default(uuid())
+  studentId String
+  postId    String
+  context   RecommendationContext
+
+  score Float
+  rank  Int?
+
+  matchedSkills Json?
+  missingSkills Json?
+  reason        String?
+  modelVersion  String?
+
+  createdAt DateTime @default(now())
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  post    InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, postId, context])
+  @@index([studentId, context])
+  @@index([postId, context])
+  @@map("recommendation_scores")
+}
+
+/**
+ * -------------------- COURSE HUB --------------------
+ */
+model Course {
+  id            String       @id @default(uuid())
+  title         String
+  description   String
+  level         CourseLevel
+  thumbnailUrl  String?
+  priceAmount   Decimal      @db.Decimal(10, 2)
+  priceCurrency String       @default("LKR")
+  isFree        Boolean      @default(false)
+  status        CourseStatus @default(DRAFT)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  modules     CourseModule[]
+  enrollments CourseEnrollment[]
+  products    Product[] // if product_type=COURSE
+
+  @@map("courses")
+}
+
+model CourseModule {
+  id       String @id @default(uuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  title       String
+  moduleOrder Int
+  createdAt   DateTime @default(now())
+
+  lessons CourseLesson[]
+
+  @@index([courseId])
+  @@map("course_modules")
+}
+
+model CourseLesson {
+  id       String       @id @default(uuid())
+  moduleId String
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  title       String
+  contentType String // video/pdf/article
+  contentUrl  String?
+  lessonOrder Int
+  createdAt   DateTime @default(now())
+
+  progress LessonProgress[]
+
+  @@index([moduleId])
+  @@map("course_lessons")
+}
+
+model CourseEnrollment {
+  id               String           @id @default(uuid())
+  courseId         String
+  studentId        String
+  enrollmentStatus EnrollmentStatus @default(ACTIVE)
+  enrolledAt       DateTime         @default(now())
+  completedAt      DateTime?
+
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("course_enrollments")
+}
+
+model LessonProgress {
+  id              String   @id @default(uuid())
+  studentId       String
+  lessonId        String
+  progressPercent Int      @default(0)
+  isCompleted     Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@map("lesson_progress")
+}
+
+/**
+ * -------------------- BOOST / PRODUCTS / PAYMENTS --------------------
+ */
+model BoostPackage {
+  id            String  @id @default(uuid())
+  name          String
+  durationDays  Int
+  boostWeight   Int     @default(10)
+  priceAmount   Decimal @db.Decimal(10, 2)
+  priceCurrency String  @default("LKR")
+  isActive      Boolean @default(true)
+
+  boostedPosts BoostedPost[]
+  products     Product[] // if product_type=BOOST
+
+  @@map("boost_packages")
+}
+
+model BoostedPost {
+  id        String  @id @default(uuid())
+  postId    String
+  companyId String
+  paymentId String? @unique
+  packageId String
+
+  startAt   DateTime
+  endAt     DateTime
+  status    BoostStatus @default(SCHEDULED)
+  createdAt DateTime    @default(now())
+
+  post    InternshipPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payment Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  package BoostPackage   @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  @@index([postId])
+  @@index([companyId])
+  @@map("boosted_posts")
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  productType ProductType
+
+  courseId       String?
+  boostPackageId String?
+
+  name          String
+  priceAmount   Decimal @db.Decimal(10, 2)
+  priceCurrency String  @default("LKR")
+  isActive      Boolean @default(true)
+
+  course       Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  boostPackage BoostPackage? @relation(fields: [boostPackageId], references: [id], onDelete: SetNull)
+  payments     Payment[]
+
+  @@map("products")
+}
+
+model Payment {
+  id       String          @id @default(uuid())
+  userType PaymentUserType
+
+  studentId String?
+  companyId String?
+
+  productId         String
+  provider          PaymentProvider
+  providerPaymentId String          @unique
+  amount            Decimal         @db.Decimal(10, 2)
+  currency          String          @default("LKR")
+  status            PaymentStatus   @default(PENDING)
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  product Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  events      PaymentEvent[]
+  boostedPost BoostedPost?
+
+  @@index([studentId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id         String          @id @default(uuid())
+  provider   PaymentProvider
+  eventId    String          @unique
+  paymentId  String?
+  eventType  String
+  payload    String
+  receivedAt DateTime        @default(now())
+  processed  Boolean         @default(false)
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId])
+  @@map("payment_events")
+}

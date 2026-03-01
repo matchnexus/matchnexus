@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Flowbite uses Tailwind classes; keep base styles clean */
+html, body {
+  height: 100%;
+}
