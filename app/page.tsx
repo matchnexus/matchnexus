@@ -60,6 +60,14 @@ export default function HomePage() {
       </section>
 
       {/* CONTENT BELOW HERO
+
+
+hi
+
+
+
+
+
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="rounded-2xl">
