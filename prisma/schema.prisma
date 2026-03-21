@@ -3,6 +3,7 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -120,8 +121,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  student Student?
-  company Company? // optional: if you want login unified through User
+  student      Student?
+  company      Company? // optional: if you want login unified through User
+  adminProfile AdminProfile?
 
   @@map("users")
 }
@@ -137,7 +139,7 @@ model Student {
   dob        DateTime?
   institute  String
   department String
-  studentId String
+  studentId  String
   degreeType DegreeType
   grade      String?
   zScore     Decimal?   @db.Decimal(5, 4)
@@ -219,11 +221,12 @@ model Company {
   userId String? @unique
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  verification CompanyVerification?
-  profile      CompanyProfile?
-  posts        InternshipPost[]
-  boostedPosts BoostedPost[]
-  payments     Payment[]
+  verification          CompanyVerification?
+  profile               CompanyProfile?
+  posts                 InternshipPost[]
+  boostedPosts          BoostedPost[]
+  payments              Payment[]
+  verificationDocuments VerificationDocument[]
 
   @@map("companies")
 }
@@ -653,4 +656,152 @@ model PaymentEvent {
 
   @@index([paymentId])
   @@map("payment_events")
+}
+
+/**
+ * ---------------------- for admin pannel-------------------------------
+ */
+
+enum AdminRole {
+  SUPER_ADMIN
+  MODERATOR
+  VERIFICATION_ADMIN
+  CONTENT_ADMIN
+  FINANCE_ADMIN
+  SUPPORT_ADMIN
+  ANALYTICS_ADMIN
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  ACCOUNT
+  COMPANY_VERIFICATION
+  JOB_POST
+  PAYMENT
+  COURSE
+  BUG
+  ABUSE_REPORT
+  OTHER
+}
+
+enum VerificationDocumentType {
+  BUSINESS_REGISTRATION
+  TAX_DOCUMENT
+  COMPANY_LETTER
+  DOMAIN_PROOF
+  OTHER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  VERIFY
+  BLOCK
+  UNBLOCK
+  LOGIN
+  EXPORT
+}
+
+model AdminProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  adminRole   AdminRole @default(MODERATOR)
+  displayName String?
+  avatarUrl   String?
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@map("admin_profiles")
+}
+
+model VerificationDocument {
+  id        String  @id @default(uuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  documentType VerificationDocumentType
+  fileUrl      String
+  fileName     String?
+  uploadedAt   DateTime                 @default(now())
+
+  reviewedById String?
+  reviewNote   String?
+  status       VerificationStatus @default(PENDING)
+
+  @@index([companyId])
+  @@map("verification_documents")
+}
+
+model SupportTicket {
+  id          String @id @default(uuid())
+  title       String
+  description String
+
+  status   TicketStatus   @default(OPEN)
+  priority TicketPriority @default(MEDIUM)
+  category TicketCategory @default(OTHER)
+
+  userId       String?
+  studentId    String?
+  companyId    String?
+  assignedToId String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@index([userId])
+  @@index([studentId])
+  @@index([companyId])
+  @@index([assignedToId])
+  @@map("support_tickets")
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  adminProfileId String
+  adminProfile   AdminProfile @relation(fields: [adminProfileId], references: [id], onDelete: Cascade)
+
+  action      AuditAction
+  entityType  String
+  entityId    String
+  description String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([adminProfileId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
 }
