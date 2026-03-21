@@ -1,8 +1,14 @@
 "use client";
 
+import { Avatar, Dropdown } from "flowbite-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import {
+  HiOutlineBriefcase,
+  HiOutlineLogout,
+  HiOutlineUserCircle,
+} from "react-icons/hi";
 
 export default function NavbarMain() {
   const pathname = usePathname();
@@ -45,12 +51,21 @@ export default function NavbarMain() {
   const linkClass = (href: string) =>
     `${baseLink} ${isActive(href) ? activeLink : normalLink}`;
 
+  const user = {
+    name: "Chamindu Perera",
+    email: "chamindu@example.com",
+    avatar: "https://flowbite.com/docs/images/people/profile-picture-5.jpg",
+    status: "Student",
+  };
+
   return (
     <header className={headerClass}>
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
         {/* LEFT: Logo */}
         <Link href="/" className="flex items-center gap-3">
-          <span className={`text-3xl font-extrabold tracking-tight ${brandClass}`}>
+          <span
+            className={`text-3xl font-extrabold tracking-tight ${brandClass}`}
+          >
             MatchNexus
           </span>
         </Link>
@@ -109,7 +124,7 @@ export default function NavbarMain() {
           </div>
 
           {/* RIGHT BUTTONS */}
-            <div className="mt-6 ml-4 flex flex-col gap-3 md:mt-0 md:flex-row md:items-center md:gap-4">           
+          <div className="mt-6 ml-4 flex flex-col gap-3 md:mt-0 md:flex-row md:items-center md:gap-4">
             <Link
               href="/auth/login"
               className="rounded-2xl bg-lime-500 px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-lime-900 text-center"
@@ -124,6 +139,38 @@ export default function NavbarMain() {
               POST YOUR VACANCY
             </Link>
           </div>
+          <Dropdown
+            arrowIcon={false}
+            inline
+            label={
+              <Avatar
+                alt="User settings"
+                img={user.avatar}
+                rounded
+                size="sm"
+                className="ring-2 ring-blue-100 p-0.5 h-8 w-8 object-cover"
+              />
+            }
+          >
+            <Dropdown.Header>
+              <span className="block text-sm font-bold">{user.name}</span>
+              <span className="block truncate text-xs text-gray-500">
+                {user.email}
+              </span>
+            </Dropdown.Header>
+            <Dropdown.Item icon={HiOutlineUserCircle}>
+              <Link
+                href="/auth/user"
+                className="font-bold text-sky-600 hover:underline"
+              >
+                My profile
+              </Link>
+            </Dropdown.Item>
+            <Dropdown.Divider />
+            <Dropdown.Item icon={HiOutlineLogout} className="text-red-600">
+              Sign out
+            </Dropdown.Item>
+          </Dropdown>
         </nav>
       </div>
     </header>

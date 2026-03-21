@@ -137,6 +137,7 @@ model Student {
   dob        DateTime?
   institute  String
   department String
+  studentId String
   degreeType DegreeType
   grade      String?
   zScore     Decimal?   @db.Decimal(5, 4)

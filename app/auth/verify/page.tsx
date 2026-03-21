@@ -2,9 +2,12 @@
 
 import { Card, Button } from "flowbite-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
+import toast from "react-hot-toast";
 
 export default function VerifyPage() {
+  const router = useRouter();
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -40,7 +43,8 @@ export default function VerifyPage() {
       alert("Please enter full OTP");
       return;
     }
-
+    toast.success("Login Successfully!");
+    router.push("/jobs");
     console.log("OTP Code:", code);
 
     // 👉 call backend API here

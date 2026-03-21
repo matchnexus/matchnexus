@@ -158,6 +158,7 @@ export default function LoginPage() {
             <Link href="/auth/register" className="font-bold text-sky-600 hover:underline">
               Register Now
             </Link>
+            
           </p>
           <Link href="/" className="mt-4 inline-block text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-[0.2em]">
             — Back to Home —
