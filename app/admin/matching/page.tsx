@@ -8,13 +8,6 @@ import {
 } from "@/server/admin/matching";
 import { formatDate } from "@/lib/format";
 
-type RecommendationRow = Awaited<
-  ReturnType<typeof getAdminRecommendationScores>
->[number];
-type ApplicationMlRow = Awaited<
-  ReturnType<typeof getAdminApplicationScores>
->[number];
-
 export default async function AdminMatchingPage() {
   const [recommendations, applicationScores] = await Promise.all([
     getAdminRecommendationScores(),
@@ -45,7 +38,7 @@ export default async function AdminMatchingPage() {
 
       <SectionCard title="Recommendation Scores">
         {recommendations.length ? (
-          <SimpleTable<RecommendationRow>
+          <SimpleTable
             columns={[
               {
                 key: "student",
@@ -111,7 +104,7 @@ export default async function AdminMatchingPage() {
 
       <SectionCard title="Application ML Scores">
         {applicationScores.length ? (
-          <SimpleTable<ApplicationMlRow>
+          <SimpleTable
             columns={[
               {
                 key: "student",

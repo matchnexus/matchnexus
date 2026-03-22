@@ -5,10 +5,6 @@ import { StatusBadge } from "@/components/admin/shared/StatusBadge";
 import { getAdminApplications } from "@/server/admin/applications";
 import { formatDate } from "@/lib/format";
 
-type ApplicationRow = Awaited<
-  ReturnType<typeof getAdminApplications>
->[number];
-
 export default async function AdminApplicationsPage() {
   const applications = await getAdminApplications();
 
@@ -34,7 +30,7 @@ export default async function AdminApplicationsPage() {
         description="Monitor student applications, statuses, and ML scoring results."
       />
 
-      <SimpleTable<ApplicationRow>
+      <SimpleTable
         columns={[
           {
             key: "student",

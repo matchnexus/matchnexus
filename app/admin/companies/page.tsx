@@ -5,8 +5,6 @@ import { StatusBadge } from "@/components/admin/shared/StatusBadge";
 import { getAdminCompanies } from "@/server/admin/companies";
 import { formatDate } from "@/lib/format";
 
-type CompanyRow = Awaited<ReturnType<typeof getAdminCompanies>>[number];
-
 export default async function AdminCompaniesPage() {
   const companies = await getAdminCompanies();
 
@@ -32,7 +30,7 @@ export default async function AdminCompaniesPage() {
         description="Review company accounts, profiles, posts, and payments."
       />
 
-      <SimpleTable<CompanyRow>
+      <SimpleTable
         columns={[
           {
             key: "company",
