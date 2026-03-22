@@ -5,6 +5,10 @@ import { StatusBadge } from "@/components/admin/shared/StatusBadge";
 import { getAdminVerifications } from "@/server/admin/verifications";
 import { formatDate } from "@/lib/format";
 
+type VerificationRow = Awaited<
+  ReturnType<typeof getAdminVerifications>
+>[number];
+
 export default async function AdminVerificationsPage() {
   const companies = await getAdminVerifications();
 
@@ -30,7 +34,7 @@ export default async function AdminVerificationsPage() {
         description="Monitor pending company verification queue."
       />
 
-      <SimpleTable
+      <SimpleTable<VerificationRow>
         columns={[
           {
             key: "company",

@@ -1,6 +1,29 @@
+import type { PostStatus, VerificationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export async function getAdminDashboardStats() {
+export async function getAdminDashboardStats(): Promise<{
+  studentsCount: number;
+  companiesCount: number;
+  pendingVerificationsCount: number;
+  activePostsCount: number;
+  applicationsCount: number;
+  coursesCount: number;
+  successfulPaymentsCount: number;
+  recentCompanies: {
+    id: string;
+    companyName: string;
+    corporateEmail: string;
+    verificationStatus: VerificationStatus;
+    createdAt: Date;
+  }[];
+  recentPosts: {
+    id: string;
+    title: string;
+    status: PostStatus;
+    createdAt: Date;
+    company: { companyName: string };
+  }[];
+}> {
   const [
     studentsCount,
     companiesCount,

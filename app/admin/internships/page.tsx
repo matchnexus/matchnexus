@@ -5,6 +5,8 @@ import { StatusBadge } from "@/components/admin/shared/StatusBadge";
 import { getAdminInternships } from "@/server/admin/internships";
 import { formatDate } from "@/lib/format";
 
+type InternshipRow = Awaited<ReturnType<typeof getAdminInternships>>[number];
+
 export default async function AdminInternshipsPage() {
   const internships = await getAdminInternships();
 
@@ -30,7 +32,7 @@ export default async function AdminInternshipsPage() {
         description="Manage internship posts, requirements, and application activity."
       />
 
-      <SimpleTable
+      <SimpleTable<InternshipRow>
         columns={[
           {
             key: "title",

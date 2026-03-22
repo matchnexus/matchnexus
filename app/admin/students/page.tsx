@@ -5,6 +5,8 @@ import { StatusBadge } from "@/components/admin/shared/StatusBadge";
 import { getAdminStudents } from "@/server/admin/students";
 import { formatDate } from "@/lib/format";
 
+type StudentRow = Awaited<ReturnType<typeof getAdminStudents>>[number];
+
 export default async function AdminStudentsPage() {
   const students = await getAdminStudents();
 
@@ -30,7 +32,7 @@ export default async function AdminStudentsPage() {
         description="Manage student profiles, skills, resumes, and activity."
       />
 
-      <SimpleTable
+      <SimpleTable<StudentRow>
         columns={[
           {
             key: "name",
