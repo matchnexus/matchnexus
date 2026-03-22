@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { sendOTPEmail } from "@/lib/mailer";
 
 export async function POST(req: Request) {
   try {
@@ -8,39 +9,51 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { student: true },
     });
 
     if (!user) {
       return NextResponse.json(
         { message: "Invalid email or password" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isValid = await bcrypt.compare(password, user.passwordHash);
 
-    if (!isPasswordValid) {
+    if (!isValid) {
       return NextResponse.json(
         { message: "Invalid email or password" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
-    return NextResponse.json({
-      message: "Login Successful",
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        studentProfile: user.student,
-      },
+    // ✅ Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // ✅ Send email
+    await sendOTPEmail({ to: email, otp });
+
+    // ✅ Store OTP in cookie (temporary)
+    const response = NextResponse.json({
+      message: "OTP sent to email",
     });
+
+    response.cookies.set("otp", otp, {
+      httpOnly: true,
+      maxAge: 60 * 5, // 5 minutes
+    });
+
+    response.cookies.set("otp_email", email, {
+      httpOnly: true,
+      maxAge: 60 * 5,
+    });
+
+    return response;
+
   } catch (error: any) {
-    console.error("Login Error:", error);
     return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 },
+      { message: "Server error" },
+      { status: 500 }
     );
   }
 }

@@ -15,6 +15,7 @@
     "flowbite": "^2.5.2",
     "flowbite-react": "^0.10.2",
     "next": "^14.2.0",
+    "nodemailer": "^8.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.12.12",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
