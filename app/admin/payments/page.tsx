@@ -9,6 +9,8 @@ import {
 } from "@/server/admin/payments";
 import { formatDate, formatCurrency } from "@/lib/format";
 
+// uddependency: getAdminPayments, getAdminBoostedPosts
+
 export default async function AdminPaymentsPage() {
   const [payments, boostedPosts] = await Promise.all([
     getAdminPayments(),
