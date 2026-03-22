@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "bcryptjs": "^3.0.3",
     "flowbite": "^2.4.1",
     "flowbite-react": "^0.10.2",
     "next": "^14.2.0",
