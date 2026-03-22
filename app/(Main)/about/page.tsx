@@ -108,6 +108,8 @@ export default function AboutPage() {
   );
 }
 
+// ddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+
 function InfoBlock({ title, text }: { title: string; text: string }) {
   return (
     <div className="rounded-2xl border bg-white p-5">
