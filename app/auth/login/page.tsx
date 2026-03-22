@@ -71,14 +71,35 @@ export default function LoginPage() {
     e.preventDefault();
 
     const validationErrors = validate();
-
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    console.log("Login Successful:", form);
-    router.push("/auth/verify");
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        
+        alert("Login Success!");
+        router.push("/auth/verify"); 
+      } else {
+        
+        setErrors({ email: result.message });
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Something went wrong. Please try again.");
+    }
   };
 
   return (
