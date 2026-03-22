@@ -3,6 +3,10 @@ import {
   HiUsers,
   HiOfficeBuilding,
   HiBadgeCheck,
+  HiBriefcase,
+  HiDocumentText,
+  HiSparkles,
+  HiCreditCard,
 } from "react-icons/hi";
 
 export const adminNavItems = [
@@ -25,5 +29,25 @@ export const adminNavItems = [
     label: "Verifications",
     href: "/admin/verifications",
     icon: HiBadgeCheck,
+  },
+  {
+    label: "Internships",
+    href: "/admin/internships",
+    icon: HiBriefcase,
+  },
+  {
+    label: "Applications",
+    href: "/admin/applications",
+    icon: HiDocumentText,
+  },
+  {
+    label: "Matching",
+    href: "/admin/matching",
+    icon: HiSparkles,
+  },
+  {
+    label: "Payments",
+    href: "/admin/payments",
+    icon: HiCreditCard,
   },
 ];
