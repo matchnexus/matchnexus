@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       const user = await tx.user.create({
         data: {
           email,
+          username: fullName,
           passwordHash: hashedPassword,
           role: "STUDENT",
           isVerified: false,
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
         data: {
           userId: user.id, 
           firstName: fullName.split(" ")[0] || "Student", 
-          lastName: fullName.split(" ").slice(1).join(" ") || "User",
+          lastName: fullName.split(" ").slice(1).join(" ") || "",
           studentId: studentId,
           address,
           dob: new Date(dob),

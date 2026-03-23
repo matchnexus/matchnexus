@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -35,19 +36,70 @@ export default function VerifyPage() {
     }
   };
 
+  const handleResend = async () => {
+    try {
+      const res = await fetch("/api/resend-otp", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message);
+        return;
+      }
+
+      toast.success("OTP resent to your email 📧");
+    } catch (error) {
+      toast.error("Something went wrong");
+    }
+  };
   // Submit OTP
-  const handleVerify = () => {
+
+  const handleVerify = async () => {
     const code = otp.join("");
 
     if (code.length < 6) {
-      alert("Please enter full OTP");
+      toast.error("Please enter full OTP");
       return;
     }
-    toast.success("Login Successfully!");
-    router.push("/jobs");
-    console.log("OTP Code:", code);
 
-    // 👉 call backend API here
+    try {
+      // 1️⃣ Verify OTP from backend
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ otp: code }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message);
+        return;
+      }
+
+      // 2️⃣ Now login with NextAuth (THIS IS IMPORTANT 🔥)
+      const result = await signIn("credentials", {
+        email: data.email, // from backend
+        password: data.password,
+        redirect: false, // we control redirect manually
+      });
+
+      if (result?.error) {
+        toast.error("NextAuth login failed");
+        return;
+      }
+
+      toast.success("Login Successfully!");
+
+      // 3️⃣ Redirect after session created
+      router.push("/jobs");
+    } catch (error) {
+      toast.error("Something went wrong");
+    }
   };
 
   return (
@@ -88,7 +140,10 @@ export default function VerifyPage() {
         {/* Resend */}
         <p className="mt-4 text-sm text-gray-600">
           Didn’t receive code?{" "}
-          <button className="font-medium text-sky-600 hover:underline">
+          <button
+            onClick={handleResend}
+            className="font-medium text-sky-600 hover:underline"
+          >
             Resend OTP
           </button>
         </p>
