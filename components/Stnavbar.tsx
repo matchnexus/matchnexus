@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,7 +30,9 @@ export default function CompanyNavbar() {
   const isActive = (href: string) => {
     if (href === "/company/dashboard") return pathname === "/company/dashboard";
     if (href === "/company/posts") {
-      return pathname === "/company/posts" || pathname.startsWith("/company/posts/");
+      return (
+        pathname === "/company/posts" || pathname.startsWith("/company/posts/")
+      );
     }
     return pathname === href || pathname.startsWith(href + "/");
   };
@@ -74,7 +77,11 @@ export default function CompanyNavbar() {
         >
           <div className="flex flex-col gap-3 md:mx-auto md:flex-row md:items-center md:gap-2">
             {tabs.map((tab) => (
-              <Link key={tab.href} href={tab.href} className={linkClass(tab.href)}>
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={linkClass(tab.href)}
+              >
                 <span>{tab.name}</span>
               </Link>
             ))}
@@ -82,20 +89,25 @@ export default function CompanyNavbar() {
 
           <div className="mt-6 md:hidden">
             <Link
-              href="/auth/company/login"
-              onClick={() => localStorage.removeItem("companyName")}
+              href="/auth/login"
+              onClick={
+                () => signOut({ callbackUrl: "/auth/login" })
+              }
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
             >
               <span className="text-base leading-none">🚪</span>
               <span>Logout</span>
             </Link>
           </div>
+          
         </nav>
 
         <div className="hidden md:flex md:items-center md:gap-4">
           <Link
-            href="/auth/company/login"
-            onClick={() => localStorage.removeItem("companyName")}
+            href="/auth/login"
+            onClick={
+              () => signOut({ callbackUrl: "/auth/login" })
+            }
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
           >
             <span className="text-base leading-none"></span>

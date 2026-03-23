@@ -146,38 +146,7 @@ export default function NavbarMain() {
               POST YOUR VACANCY
             </Link>
           </div>
-          <Dropdown
-            arrowIcon={false}
-            inline
-            label={
-              <Avatar
-                alt="User settings"
-                img={user.avatar}
-                rounded
-                size="sm"
-                className="ring-2 ring-blue-100 p-0.5 h-8 w-8 object-cover"
-              />
-            }
-          >
-            <Dropdown.Header>
-              <span className="block text-sm font-bold">{user.name}</span>
-              <span className="block truncate text-xs text-gray-500">
-                {user.email}
-              </span>
-            </Dropdown.Header>
-            <Dropdown.Item icon={HiOutlineUserCircle}>
-              <Link
-                href="/auth/student/user"
-                className="font-bold text-sky-600 hover:underline"
-              >
-                My profile
-              </Link>
-            </Dropdown.Item>
-            <Dropdown.Divider />
-            <Dropdown.Item icon={HiOutlineLogout} className="text-red-600">
-              Sign out
-            </Dropdown.Item>
-          </Dropdown>
+          
         </nav>
       </div>
     </header>
