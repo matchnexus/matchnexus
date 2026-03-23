@@ -82,32 +82,13 @@ export default function UserFriendlyProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleUpdate = async () => {
-  if (validateForm()) {
-    const loadingToast = toast.loading("Updating profile...");
-    
-    try {
-      const response = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          skills: skills, // Array එක කෙලින්ම යවන්න
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(result.message, { id: loadingToast });
-      } else {
-        toast.error(result.message || "Something went wrong", { id: loadingToast });
-      }
-    } catch (error) {
-      toast.error("Network error. Please try again.", { id: loadingToast });
+  const handleUpdate = () => {
+    if (validateForm()) {
+      const formattedGPA = parseFloat(form.grade).toFixed(2);
+      setForm({ ...form, grade: formattedGPA });
+      toast.success("Update Successfully!");
     }
-  }
-};
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

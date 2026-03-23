@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     
     const updatedStudent = await prisma.student.update({
       where: { 
-        studentId: studentId 
+        id: studentId 
       },
       data: {
         firstName: updateData.firstName,

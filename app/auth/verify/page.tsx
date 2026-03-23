@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function VerifyPage() {
     }
   };
   // Submit OTP
+
   const handleVerify = async () => {
     const code = otp.join("");
 
@@ -63,6 +65,7 @@ export default function VerifyPage() {
     }
 
     try {
+      // 1️⃣ Verify OTP from backend
       const res = await fetch("/api/verify-otp", {
         method: "POST",
         headers: {
@@ -78,9 +81,21 @@ export default function VerifyPage() {
         return;
       }
 
+      // 2️⃣ Now login with NextAuth (THIS IS IMPORTANT 🔥)
+      const result = await signIn("credentials", {
+        email: data.email, // from backend
+        password: data.password,
+        redirect: false, // we control redirect manually
+      });
+
+      if (result?.error) {
+        toast.error("NextAuth login failed");
+        return;
+      }
+
       toast.success("Login Successfully!");
 
-      // ✅ redirect after success
+      // 3️⃣ Redirect after session created
       router.push("/jobs");
     } catch (error) {
       toast.error("Something went wrong");

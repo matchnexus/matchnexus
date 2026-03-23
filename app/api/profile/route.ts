@@ -1,48 +1,43 @@
-import { prisma } from "@/lib/prisma"; 
-import { NextResponse } from "next/server"; 
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("studentId");
+    const cookieStore = cookies();
+    const userId = cookieStore.get("userId")?.value;
 
-   
-    if (!id) {
+    if (!userId) {
       return NextResponse.json(
-        { message: "Student ID Required" }, 
-        { status: 400 }
+        { message: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-   
-    const profile = await prisma.student.findUnique({
-      where: {
-        studentId: id, 
-      },
-      include: {
-        skills: {
-          include: { 
-            skill: true 
-          } 
-        }
-      }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { student: true },
     });
 
-    
-    if (!profile) {
+    if (!user) {
       return NextResponse.json(
-        { message: "Student profile not found" }, 
+        { message: "User not found" },
         { status: 404 }
       );
     }
 
-    // 4. සාර්ථක නම් දත්ත ලබා දෙනවා
-    return NextResponse.json(profile);
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        student: user.student,
+      },
+    });
 
-  } catch (error: any) {
-    console.error("GET Profile Error:", error);
+  } catch (error) {
     return NextResponse.json(
-      { message: "Internal Server Error", error: error.message }, 
+      { message: "Server error" },
       { status: 500 }
     );
   }
