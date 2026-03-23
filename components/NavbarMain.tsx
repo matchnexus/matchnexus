@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
+  HiOutlineAcademicCap,
   HiOutlineBriefcase,
   HiOutlineLogout,
   HiOutlineUserCircle,
@@ -171,6 +172,14 @@ export default function NavbarMain() {
                 className="font-bold text-sky-600 hover:underline"
               >
                 My profile
+              </Link>
+            </Dropdown.Item>
+            <Dropdown.Item icon={HiOutlineAcademicCap}>
+              <Link
+                href="/student/hub"
+                className="font-bold text-sky-600 hover:underline"
+              >
+                Student hub
               </Link>
             </Dropdown.Item>
             <Dropdown.Divider />

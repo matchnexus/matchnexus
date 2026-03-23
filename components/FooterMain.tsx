@@ -49,7 +49,7 @@ export default function FooterMain() {
             <ul className="mt-4 space-y-2 text-sm text-white/85">
               <li><Link className="hover:text-white" href="/auth/login">Login</Link></li>
               <li><Link className="hover:text-white" href="/jobs">Jobs</Link></li>
-              <li><Link className="hover:text-white" href="/courses">Online Courses</Link></li>
+              <li><Link className="hover:text-white" href="/student/hub">Student hub</Link></li>
 
               <li><Link className="hover:text-white" href="/premium">Try Premium</Link></li>
             </ul>
