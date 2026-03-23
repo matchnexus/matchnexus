@@ -15,6 +15,13 @@ export default function NavbarMain() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  if (
+    pathname === "/auth/company/login" ||
+    pathname.startsWith("/company/")
+  ) {
+    return null;
+  }
+
   const isHome = pathname === "/";
 
   const headerClass = isHome
@@ -134,7 +141,7 @@ export default function NavbarMain() {
             </Link>
 
             <Link
-              href="/company/login"
+              href="/auth/company/login"
               className="rounded-2xl bg-red-800 px-7 py-4 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-red-900 text-center"
             >
               POST YOUR VACANCY
