@@ -167,7 +167,7 @@ export default function NavbarMain() {
             </Dropdown.Header>
             <Dropdown.Item icon={HiOutlineUserCircle}>
               <Link
-                href="/auth/user"
+                href="/auth/student/user"
                 className="font-bold text-sky-600 hover:underline"
               >
                 My profile
