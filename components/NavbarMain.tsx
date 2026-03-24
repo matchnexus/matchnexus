@@ -17,7 +17,8 @@ export default function NavbarMain() {
 
   if (
     pathname === "/auth/company/login" ||
-    pathname.startsWith("/company/")
+    pathname.startsWith("/company/") ||
+    (pathname.startsWith("/admin/") && pathname !== "/admin/login")
   ) {
     return null;
   }
