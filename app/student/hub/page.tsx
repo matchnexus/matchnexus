@@ -15,7 +15,7 @@ export default function StudentHubPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] py-10 px-4 md:px-8 font-sans">
+    <div className="py-10 px-4 md:px-8 font-sans">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-wrap gap-2">
           {tabs.map((t) => (
