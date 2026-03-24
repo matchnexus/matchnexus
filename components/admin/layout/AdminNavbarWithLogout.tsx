@@ -23,7 +23,7 @@ export function AdminNavbarWithLogout() {
       if (res.ok) {
         toast.success("Logged out successfully");
         setTimeout(() => {
-          router.push("/admin/login");
+          router.push("/");
         }, 500);
       } else {
         toast.error("Logout failed");

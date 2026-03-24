@@ -6,7 +6,8 @@ import bcrypt from "bcryptjs";
  * In production, use environment variables or secure credential storage
  */
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@matchnexus.com";
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lm";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123"; // Development mode plaintext
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
 export async function validateAdminCredentials(
   email: string,
@@ -15,8 +16,6 @@ export async function validateAdminCredentials(
   console.log("🔐 Admin Login Attempt:");
   console.log("- Input Email:", email);
   console.log("- Expected Email:", ADMIN_EMAIL);
-  console.log("- Input Password:", password);
-  console.log("- Password Hash (first 20 chars):", ADMIN_PASSWORD_HASH?.substring(0, 20));
 
   // Check if email matches admin email
   if (email !== ADMIN_EMAIL) {
@@ -24,11 +23,18 @@ export async function validateAdminCredentials(
     return { valid: false };
   }
 
-  // Verify password against stored hash
+  // Verify password - use plaintext in development, bcrypt in production
   let isPasswordValid = false;
   try {
-    isPasswordValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-    console.log("✅ Password comparison result:", isPasswordValid);
+    if (process.env.NODE_ENV === "production" && ADMIN_PASSWORD_HASH) {
+      // Production: use bcrypt
+      isPasswordValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+      console.log("✅ Password comparison result (bcrypt):", isPasswordValid);
+    } else {
+      // Development: simple string comparison
+      isPasswordValid = password === ADMIN_PASSWORD;
+      console.log("✅ Password comparison result (plaintext):", isPasswordValid);
+    }
   } catch (err) {
     console.error("❌ Password comparison error:", err);
     return { valid: false };

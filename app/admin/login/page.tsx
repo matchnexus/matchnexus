@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HiMail, HiLockClosed, HiSparkles } from "react-icons/hi";
+import { HiMail, HiLockClosed } from "react-icons/hi";
 import toast, { Toaster } from "react-hot-toast";
 import NavbarMain from "@/components/NavbarMain";
 import FooterMain from "@/components/FooterMain";
@@ -34,7 +34,6 @@ export default function AdminLoginPage() {
 
       toast.success("Admin login successful!");
       
-      // Redirect to admin dashboard
       setTimeout(() => {
         router.push("/admin");
       }, 1000);
@@ -49,28 +48,32 @@ export default function AdminLoginPage() {
     <>
       <Toaster position="top-right" />
       <NavbarMain />
-      <div className="min-h-screen bg-gradient-to-br from-background-base via-white to-background-soft flex items-center justify-center p-4 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4 pt-20 md:pt-24">
         <div className="w-full max-w-md">
-          {/* Header Card */}
+          {/* Logo Section */}
           <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg mb-4">
-              <HiSparkles className="h-8 w-8 text-white" />
+            <div className="flex justify-center">
+              <img 
+                src="/photos/logo.png" 
+                alt="Logo" 
+                className="h-48 w-auto drop-shadow-lg" // increased size with subtle shadow
+              />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">MatchNexus</h1>
-            <p className="text-gray-600">Admin Dashboard</p>
           </div>
 
           {/* Login Form Card */}
-          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-xl">
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Admin Login</h2>
-            <p className="text-gray-600 text-sm mb-6">
-              Enter your credentials to access the admin dashboard
-            </p>
+          <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-white/20 shadow-2xl p-8 transition-all duration-300 hover:shadow-emerald-500/10">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                Welcome Back
+              </h2>
+              
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
@@ -81,7 +84,7 @@ export default function AdminLoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@matchnexus.com"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white/50"
                     required
                   />
                 </div>
@@ -89,7 +92,7 @@ export default function AdminLoginPage() {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Password
                 </label>
                 <div className="relative">
@@ -100,7 +103,7 @@ export default function AdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white/50"
                     required
                   />
                 </div>
@@ -110,25 +113,35 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-6 py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
               </button>
             </form>
 
             {/* Footer Info */}
-            <div className="mt-6 pt-6 border-t border-gray-100">
-              <p className="text-xs text-gray-500 text-center">
-                For security reasons, only authorized admin users can access this dashboard.
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <p className="text-xs text-gray-400 text-center">
+                🔒 Secure access • Authorized personnel only
               </p>
             </div>
           </div>
 
-          {/* Decoration */}
-          <div className="mt-8 flex justify-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <div className="w-2 h-2 rounded-full bg-teal-500" />
-            <div className="w-2 h-2 rounded-full bg-cyan-500" />
+          {/* Subtle Decoration */}
+          <div className="mt-6 flex justify-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse delay-150" />
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse delay-300" />
           </div>
         </div>
       </div>
