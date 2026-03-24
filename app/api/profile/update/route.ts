@@ -1,59 +1,140 @@
-import { prisma } from "@/lib/prisma"; 
-import { NextResponse } from "next/server"; 
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
-export async function POST(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { studentId, ...updateData } = body;
+    const cookieStore = cookies();
+    const userId = cookieStore.get("userId")?.value;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-   
-    if (!studentId) {
+    // ── Parse multipart/form-data ──────────────────────────────────────────
+    const formData = await req.formData();
+
+    const studentId = formData.get("studentId") as string;
+    const firstName = formData.get("firstName") as string;
+    const lastName = formData.get("lastName") as string;
+    const address = formData.get("address") as string;
+    const dob = formData.get("dob") as string | null;
+    const institute = formData.get("institute") as string;
+    const department = formData.get("department") as string;
+    const degreeType = formData.get("degreeType") as string;
+    const grade = formData.get("grade") as string | null;
+    const github = formData.get("github") as string | null;
+    const linkedin = formData.get("linkedin") as string | null;
+    const skillsRaw = formData.get("skills") as string | null; // JSON array of skill names
+    const cvFile = formData.get("cvFile") as File | null;
+
+    // ── Basic validation ───────────────────────────────────────────────────
+    if (!studentId || !firstName || !institute || !department || !degreeType) {
       return NextResponse.json(
-        { message: "Student ID is required" }, 
-        { status: 400 }
+        { error: "Missing required fields" },
+        { status: 400 },
       );
     }
 
-    
-    const updatedStudent = await prisma.student.update({
-      where: { 
-        id: studentId 
-      },
-      data: {
-        firstName: updateData.firstName,
-        lastName: updateData.lastName,
-        address: updateData.address,
-        
-        dob: updateData.dob ? new Date(updateData.dob) : null,
-        institute: updateData.institute,
-        department: updateData.department,
-        degreeType: updateData.degreeType, 
-        grade: updateData.grade,
-        githubLink: updateData.githubLink,
-        linkedinLink: updateData.linkedinLink,
-        personalPortfolio: updateData.personalPortfolio,
-      },
+    // ── Resolve the Student row that belongs to the logged-in user ─────────
+    const existingStudent = await prisma.student.findUnique({
+      where: { userId: userId },
     });
 
-    return NextResponse.json({
-      message: "Profile Updated Successfully",
-      student: updatedStudent,
-    });
-
-  } catch (error: any) {
-    console.error("Update Error:", error);
-    
-   
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { message: "Student record not found" },
-        { status: 404 }
-      );
+    if (!existingStudent) {
+      return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
+
+    // ── Run everything in a transaction ───────────────────────────────────
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update core Student fields ──────────────────────────────────────
+      const updatedStudent = await tx.student.update({
+        where: { userId: userId },
+        data: {
+          studentId,
+          firstName,
+          lastName,
+          address: address || null,
+          dob: dob ? new Date(dob) : null,
+          institute,
+          department,
+          degreeType: degreeType as any, // cast to your DegreeType enum
+          grade: grade || null,
+          githubLink: github || null,
+          linkedinLink: linkedin || null,
+        },
+      });
+
+      // 2. Sync Skills ─────────────────────────────────────────────────────
+      //    Strategy: delete all existing student_skills, then re-insert.
+      //    This is the safest approach when the client sends the full list.
+      if (skillsRaw !== null) {
+        const skillNames: string[] = JSON.parse(skillsRaw);
+
+        // Delete current skill associations
+        await tx.studentSkill.deleteMany({
+          where: { studentId: updatedStudent.id },
+        });
+
+        if (skillNames.length > 0) {
+          // Look up Skill IDs by name (only skills that actually exist in DB)
+          const skillRecords = await tx.skill.findMany({
+            where: { name: { in: skillNames } },
+            select: { id: true },
+          });
+
+          // Re-create associations
+          await tx.studentSkill.createMany({
+            data: skillRecords.map((skill) => ({
+              studentId: updatedStudent.id,
+              skillId: skill.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      // 3. Handle CV / Resume upload ────────────────────────────────────────
+      let resumeRecord = null;
+
+      if (cvFile && cvFile.size > 0) {
+        // ── Save file to disk (or swap for S3/Cloudinary as needed) ──────
+        const bytes = await cvFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const fileName = `${updatedStudent.id}_${Date.now()}_${cvFile.name}`;
+
+        // Example: save to /public/resumes/ (adjust path as needed)
+        const { writeFile, mkdir } = await import("fs/promises");
+        const { join } = await import("path");
+
+        const uploadDir = join(process.cwd(), "public", "resumes");
+        await mkdir(uploadDir, { recursive: true });
+
+        const filePath = join(uploadDir, fileName);
+        await writeFile(filePath, buffer);
+
+        // Store the public path in the DB
+        const publicPath = `/resumes/${fileName}`;
+
+        resumeRecord = await tx.resume.create({
+          data: {
+            studentId: updatedStudent.id,
+            filePath: publicPath,
+          },
+        });
+      }
+
+      return { student: updatedStudent, resume: resumeRecord };
+    });
 
     return NextResponse.json(
-      { message: "Failed to update profile", error: error.message },
-      { status: 500 }
+      { message: "Profile updated successfully", data: result },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("[PROFILE_UPDATE_ERROR]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
