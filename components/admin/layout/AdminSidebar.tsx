@@ -71,7 +71,7 @@ export function AdminSidebar() {
           {!isCollapsed ? (
             <div className="flex w-full flex-col items-center gap-2">
               <Link href="/admin" className="group flex flex-col items-center">
-                <div className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-gradient-to-br from-white to-white shadow-md transition-all duration-300 group-hover:scale-105">
+                <div className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-gradient-to-br from-background-soft to-background-base shadow-md transition-all duration-300 group-hover:scale-105">
                   {LOGO_URL ? (
                     <Image
                       src={LOGO_URL}
@@ -92,7 +92,7 @@ export function AdminSidebar() {
           ) : (
             <Link
               href="/admin"
-              className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-white to-white shadow-md transition-all duration-300 hover:scale-105"
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-background-soft to-background-base shadow-md transition-all duration-300 hover:scale-105"
             >
               {LOGO_URL ? (
                 <Image
@@ -296,7 +296,7 @@ export function AdminSidebar() {
             </div>
 
             {!isCollapsed && (
-              <div className="mx-3 mt-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 p-3 transition-all duration-300 hover:shadow-md">
+              <div className="mx-3 mt-4 rounded-xl bg-gradient-to-r from-background-soft to-background-base p-3 transition-all duration-300 hover:shadow-md">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-sm font-semibold text-white">
