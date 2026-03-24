@@ -294,7 +294,7 @@ export default function UserFriendlyProfile() {
                     name="department"
                     value={form.department}
                     onChange={handleChange}
-                    icon={HiOfficeBuilding} 
+                    icon={HiOfficeBuilding}
                     required
                     theme={{
                       field: {
@@ -304,7 +304,7 @@ export default function UserFriendlyProfile() {
                             gray: "bg-slate-50 text-slate-700 font-bold text-sm rounded-xl focus:ring-2 focus:ring-blue-100",
                           },
                           withIcon: {
-                            on: "pl-11", 
+                            on: "pl-11",
                           },
                         },
                         icon: {
@@ -332,7 +332,7 @@ export default function UserFriendlyProfile() {
                     name="degreeType"
                     value={form.degreeType}
                     onChange={handleChange}
-                    icon={HiAcademicCap} 
+                    icon={HiAcademicCap}
                     required
                     theme={{
                       field: {
