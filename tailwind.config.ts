@@ -7,7 +7,14 @@ const config: Config = {
     "./node_modules/flowbite-react/lib/esm/**/*.js"
   ],
   theme: {
-    extend: {}
+    extend: {
+      colors: {
+        background: {
+          base: '#F8FBFF',
+          soft: '#EDF7F8',
+        },
+      },
+    }
   },
   plugins: [require("flowbite/plugin")]
 };

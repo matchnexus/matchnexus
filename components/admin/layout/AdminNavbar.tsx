@@ -18,7 +18,7 @@ export function AdminNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-xl shadow-sm">
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-background-base/80 backdrop-blur-xl shadow-sm">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Mobile Menu Button */}
           <button className="block lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
@@ -79,7 +79,7 @@ export function AdminNavbar() {
                     onClick={() => setShowNotifications(false)}
                   />
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-background-soft">
                       <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                       <p className="text-xs text-gray-500 mt-0.5">You have 3 new updates</p>
                     </div>
