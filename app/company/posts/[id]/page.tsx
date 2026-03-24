@@ -140,9 +140,9 @@ export default function EditPostPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-transparent px-4 py-6 md:py-8">
       <div className="mx-auto max-w-4xl space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
           {loadingPost ? (
             <div className="space-y-3">
               <div className="h-5 w-48 animate-pulse rounded bg-slate-200" />

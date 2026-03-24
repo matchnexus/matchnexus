@@ -28,6 +28,26 @@ export async function POST(req: Request) {
       );
     }
 
+    const parsedApplicationDeadline = new Date(applicationDeadline);
+    if (Number.isNaN(parsedApplicationDeadline.getTime())) {
+      return NextResponse.json(
+        { error: "Application deadline is invalid" },
+        { status: 400 }
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const normalizedDeadline = new Date(parsedApplicationDeadline);
+    normalizedDeadline.setHours(0, 0, 0, 0);
+
+    if (normalizedDeadline < today) {
+      return NextResponse.json(
+        { error: "Application deadline cannot be in the past" },
+        { status: 400 }
+      );
+    }
+
     const company = await prisma.company.findUnique({
       where: { id: companyId },
     });
@@ -49,7 +69,7 @@ export async function POST(req: Request) {
         workType,
         durationMonths,
         stipendAmount,
-        applicationDeadline: new Date(applicationDeadline),
+        applicationDeadline: parsedApplicationDeadline,
         status: "DRAFT",
       },
     });
@@ -130,10 +150,20 @@ export async function GET(req: Request) {
       include: {
         requiredSkills: true,
         optionalSkills: true,
+        _count: {
+          select: {
+            applications: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json({ posts }, { status: 200 });
+    const postsWithApplicationCounts = posts.map(({ _count, ...post }) => ({
+      ...post,
+      applicationsCount: _count.applications,
+    }));
+
+    return NextResponse.json({ posts: postsWithApplicationCounts }, { status: 200 });
   } catch (error) {
     console.error("Fetch posts error:", error);
     return NextResponse.json(

@@ -16,6 +16,7 @@ export default function CompanyNavbar() {
 
   const tabs = [
     { name: "Dashboard", href: "/company/dashboard" },
+    { name: "Applications", href: "/company/applications" },
     { name: "Analytics", href: "/company/analytics" },
     { name: "Posts", href: "/company/posts" },
     { name: "Profile", href: "/company/profile" },
@@ -23,8 +24,8 @@ export default function CompanyNavbar() {
 
   const baseLink =
     "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition";
-  const normalLink = "text-gray-700 hover:bg-gray-100 hover:text-gray-900";
-  const activeLink = "bg-blue-600 text-white shadow-sm";
+  const normalLink = "text-slate-100 hover:bg-white/15 hover:text-white";
+  const activeLink = "bg-white/95 text-slate-800 shadow-sm";
 
   const isActive = (href: string) => {
     if (href === "/company/dashboard") return pathname === "/company/dashboard";
@@ -40,16 +41,16 @@ export default function CompanyNavbar() {
   const displayTitle = companyName ? `Welcome, ${companyName}` : "Welcome";
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full border-b bg-white">
+    <header className="fixed top-0 left-0 z-50 w-full border-b border-slate-300/40 bg-gradient-to-r from-slate-700 via-slate-600 to-blue-700 shadow-sm">
       <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
         <Link href="/company/dashboard" className="flex items-center gap-2">
-          <span className="text-xl font-extrabold tracking-tight text-gray-900">
+          <span className="text-xl font-extrabold tracking-tight text-white">
             {displayTitle}
           </span>
         </Link>
 
         <button
-          className="inline-flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 md:hidden"
+          className="inline-flex items-center rounded-lg p-2 text-white hover:bg-white/20 md:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-label="Open company menu"
           type="button"
@@ -68,7 +69,7 @@ export default function CompanyNavbar() {
           className={[
             "md:absolute md:left-1/2 md:flex md:-translate-x-1/2 md:items-center",
             open
-              ? "absolute left-0 top-full w-full border-b bg-white px-6 py-6 shadow-sm md:top-auto md:w-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none"
+              ? "absolute left-0 top-full w-full border-b border-slate-300/40 bg-gradient-to-r from-slate-700 via-slate-600 to-blue-700 px-6 py-6 shadow-sm md:top-auto md:w-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none"
               : "hidden md:flex",
           ].join(" ")}
         >
@@ -84,7 +85,7 @@ export default function CompanyNavbar() {
             <Link
               href="/auth/company/login"
               onClick={() => localStorage.removeItem("companyName")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
             >
               <span className="text-base leading-none">🚪</span>
               <span>Logout</span>
@@ -96,7 +97,7 @@ export default function CompanyNavbar() {
           <Link
             href="/auth/company/login"
             onClick={() => localStorage.removeItem("companyName")}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
           >
             <span className="text-base leading-none"></span>
             <span>Logout</span>

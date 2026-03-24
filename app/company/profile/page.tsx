@@ -15,23 +15,43 @@ type CompanyProfileForm = {
   linkedinUrl: string;
 };
 
+const EMPTY_PROFILE_FORM: CompanyProfileForm = {
+  websiteUrl: "",
+  industry: "",
+  companySize: "",
+  foundedYear: "",
+  headquartersLocation: "",
+  description: "",
+  missionStatement: "",
+  workCulture: "",
+  benefits: "",
+  linkedinUrl: "",
+};
+
+const hasAnyProfileDetail = (profile: CompanyProfileForm) =>
+  Object.values(profile).some((value) => value.trim().length > 0);
+
+const buildProfileCacheKey = (companyId: string, companyEmail: string) =>
+  `companyProfile:${companyId || companyEmail || "default"}`;
+
+const COMPANY_SIZE_PATTERN = /^\d+\s*-\s*\d+$|^\d+\+$/;
+const COMPANY_SIZE_MAX_LENGTH = 12;
+const COMPANY_SIZE_OPTIONS = [
+  "1-10",
+  "11-50",
+  "51-200",
+  "201-500",
+  "501-1000",
+  "1001-5000",
+  "5001+",
+];
+
 export default function CompanyProfilePage() {
   const [companyId, setCompanyId] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyEmail, setCompanyEmail] = useState("");
 
-  const [formData, setFormData] = useState<CompanyProfileForm>({
-    websiteUrl: "",
-    industry: "",
-    companySize: "",
-    foundedYear: "",
-    headquartersLocation: "",
-    description: "",
-    missionStatement: "",
-    workCulture: "",
-    benefits: "",
-    linkedinUrl: "",
-  });
+  const [formData, setFormData] = useState<CompanyProfileForm>(EMPTY_PROFILE_FORM);
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -48,6 +68,22 @@ export default function CompanyProfilePage() {
     setCompanyId(storedCompanyId);
     setCompanyName(storedCompanyName);
     setCompanyEmail(storedCompanyEmail);
+
+    const initialCacheKey = buildProfileCacheKey(storedCompanyId, storedCompanyEmail);
+    const cachedProfileRaw = localStorage.getItem(initialCacheKey);
+
+    if (cachedProfileRaw) {
+      try {
+        const cachedProfile = JSON.parse(cachedProfileRaw) as CompanyProfileForm;
+        if (hasAnyProfileDetail(cachedProfile)) {
+          setFormData(cachedProfile);
+          setSavedProfile(cachedProfile);
+          setIsEditMode(false);
+        }
+      } catch {
+        localStorage.removeItem(initialCacheKey);
+      }
+    }
 
     if (!storedCompanyId && !storedCompanyEmail) {
       setIsError(true);
@@ -94,13 +130,14 @@ export default function CompanyProfilePage() {
 
           setFormData(profileFromApi);
 
-          const hasAnyProfileDetail = Object.values(profileFromApi).some(
-            (value) => value.trim().length > 0
-          );
-
-          if (hasAnyProfileDetail) {
+          if (hasAnyProfileDetail(profileFromApi)) {
             setSavedProfile(profileFromApi);
             setIsEditMode(false);
+            const freshCacheKey = buildProfileCacheKey(
+              data.company?.id || storedCompanyId,
+              data.company?.corporateEmail || storedCompanyEmail
+            );
+            localStorage.setItem(freshCacheKey, JSON.stringify(profileFromApi));
           }
         }
       } catch (error) {
@@ -113,22 +150,89 @@ export default function CompanyProfilePage() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
+    if (e.target.name === "companySize") {
+      const sanitizedValue = e.target.value
+        .replace(/[^0-9+\-\s]/g, "")
+        .slice(0, COMPANY_SIZE_MAX_LENGTH);
+      setFormData({
+        ...formData,
+        [e.target.name]: sanitizedValue,
+      });
+      return;
+    }
+
+    if (e.target.name === "foundedYear") {
+      const sanitizedYear = e.target.value.replace(/\D/g, "").slice(0, 4);
+      setFormData({
+        ...formData,
+        [e.target.name]: sanitizedYear,
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
+  const handleFoundedYearKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key.length > 1) return;
+
+    if (!/[0-9]/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
+    const normalizedCompanySize = formData.companySize.trim();
+    const foundedYearRaw = formData.foundedYear.trim();
+    const currentYear = new Date().getFullYear();
 
     if (!companyId) {
       setIsError(true);
       setMessage("Company ID not found. Please login again.");
       return;
+    }
+
+    if (normalizedCompanySize) {
+      if (normalizedCompanySize.length > COMPANY_SIZE_MAX_LENGTH) {
+        setIsError(true);
+        setMessage(`Company Size must be ${COMPANY_SIZE_MAX_LENGTH} characters or fewer`);
+        return;
+      }
+
+      if (!COMPANY_SIZE_PATTERN.test(normalizedCompanySize)) {
+        setIsError(true);
+        setMessage("Company Size must be in format 11-50 or 200+");
+        return;
+      }
+
+      if (normalizedCompanySize.includes("-")) {
+        const [minRaw, maxRaw] = normalizedCompanySize.split("-").map((part) => part.trim());
+        const min = Number(minRaw);
+        const max = Number(maxRaw);
+
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0 || max < min) {
+          setIsError(true);
+          setMessage("Company Size range is invalid. Example: 11-50");
+          return;
+        }
+      }
+    }
+
+    if (foundedYearRaw) {
+      const foundedYear = Number(foundedYearRaw);
+      if (!/^\d{4}$/.test(foundedYearRaw) || foundedYear > currentYear) {
+        setIsError(true);
+        setMessage(`Founded Year cannot be greater than ${currentYear}`);
+        return;
+      }
     }
 
     try {
@@ -144,10 +248,8 @@ export default function CompanyProfilePage() {
           companyId,
           websiteUrl: formData.websiteUrl,
           industry: formData.industry,
-          companySize: formData.companySize,
-          foundedYear: formData.foundedYear
-            ? Number(formData.foundedYear)
-            : null,
+          companySize: normalizedCompanySize,
+          foundedYear: foundedYearRaw ? Number(foundedYearRaw) : null,
           headquartersLocation: formData.headquartersLocation,
           description: formData.description,
           missionStatement: formData.missionStatement,
@@ -166,8 +268,18 @@ export default function CompanyProfilePage() {
       }
 
       setIsError(false);
-      setSavedProfile({ ...formData });
+      const normalizedFormData = {
+        ...formData,
+        companySize: normalizedCompanySize,
+        foundedYear: foundedYearRaw,
+      };
+      setFormData(normalizedFormData);
+      setSavedProfile(normalizedFormData);
       setIsEditMode(false);
+      localStorage.setItem(
+        buildProfileCacheKey(companyId, companyEmail),
+        JSON.stringify(normalizedFormData)
+      );
       setMessage(data.message || "Profile saved successfully");
     } catch (error) {
       setIsError(true);
@@ -186,7 +298,7 @@ export default function CompanyProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-blue-100 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-indigo-800">Set Up Company Profile</h1>
         <p className="mt-2 text-sm text-gray-600">
           Fill in your company details below to complete your profile setup.
@@ -194,7 +306,7 @@ export default function CompanyProfilePage() {
       </div>
 
       <div className="grid gap-6">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
           {isEditMode ? (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
@@ -203,7 +315,7 @@ export default function CompanyProfilePage() {
                   type="text"
                   value={companyName}
                   readOnly
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                  className="w-full rounded-lg border border-gray-200 bg-slate-50/80 px-3 py-2 text-sm text-gray-700"
                 />
               </div>
 
@@ -248,23 +360,32 @@ export default function CompanyProfilePage() {
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-indigo-700">Company Size</label>
-                  <input
-                    type="text"
+                  <select
                     name="companySize"
                     value={formData.companySize}
                     onChange={handleChange}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="11-50"
-                  />
+                  >
+                    <option value="">Select company size</option>
+                    {COMPANY_SIZE_OPTIONS.map((sizeOption) => (
+                      <option key={sizeOption} value={sizeOption}>
+                        {sizeOption}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-indigo-700">Founded Year</label>
                   <input
-                    type="number"
+                    type="text"
                     name="foundedYear"
                     value={formData.foundedYear}
                     onChange={handleChange}
+                    onKeyDown={handleFoundedYearKeyDown}
+                    inputMode="numeric"
+                    pattern="[0-9]{4}"
+                    maxLength={4}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="2018"
                   />
@@ -357,57 +478,57 @@ export default function CompanyProfilePage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company Name</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(companyName)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Corporate Email</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(companyEmail)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Website URL</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.websiteUrl)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">LinkedIn URL</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.linkedinUrl)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Industry</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.industry)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company Size</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.companySize)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Founded Year</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.foundedYear)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Headquarters Location</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(profileToShow.headquartersLocation)}</p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company Description</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{displayValue(profileToShow.description)}</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Mission Statement</p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{displayValue(profileToShow.missionStatement)}</p>
                 </div>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Work Culture</p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{displayValue(profileToShow.workCulture)}</p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Benefits</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{displayValue(profileToShow.benefits)}</p>
               </div>

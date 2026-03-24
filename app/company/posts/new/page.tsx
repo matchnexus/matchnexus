@@ -3,6 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const DURATION_YEAR_OPTIONS = Array.from({ length: 5 }, (_, index) => String(index + 1));
+const DURATION_MONTH_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index + 1));
+
 export default function CreatePostPage() {
   const router = useRouter();
   const [companyId, setCompanyId] = useState("");
@@ -12,7 +23,6 @@ export default function CreatePostPage() {
     responsibilities: "",
     location: "",
     workType: "",
-    durationMonths: "",
     stipendAmount: "",
     applicationDeadline: "",
     requiredSkills: "",
@@ -22,6 +32,14 @@ export default function CreatePostPage() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [durationUnit, setDurationUnit] = useState<"MONTHS" | "YEARS">("MONTHS");
+  const [durationValue, setDurationValue] = useState("");
+  const todayDate = getTodayDateString();
+  const totalDurationMonths = durationValue
+    ? durationUnit === "YEARS"
+      ? Number(durationValue) * 12
+      : Number(durationValue)
+    : 0;
 
   const canSubmit =
     formData.title.trim() &&
@@ -52,6 +70,12 @@ export default function CreatePostPage() {
       return;
     }
 
+    if (formData.applicationDeadline < todayDate) {
+      setIsError(true);
+      setMessage("Application deadline cannot be in the past.");
+      return;
+    }
+
     try {
       setLoading(true);
       setIsError(false);
@@ -68,9 +92,7 @@ export default function CreatePostPage() {
           responsibilities: formData.responsibilities,
           location: formData.location,
           workType: formData.workType || null,
-          durationMonths: formData.durationMonths
-            ? Number(formData.durationMonths)
-            : null,
+          durationMonths: totalDurationMonths > 0 ? totalDurationMonths : null,
           stipendAmount: formData.stipendAmount
             ? Number(formData.stipendAmount)
             : null,
@@ -97,12 +119,13 @@ export default function CreatePostPage() {
         responsibilities: "",
         location: "",
         workType: "",
-        durationMonths: "",
         stipendAmount: "",
         applicationDeadline: "",
         requiredSkills: "",
         optionalSkills: "",
       });
+      setDurationUnit("MONTHS");
+      setDurationValue("");
 
       setTimeout(() => {
         router.push("/company/posts");
@@ -116,9 +139,9 @@ export default function CreatePostPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-transparent px-4 py-6 md:py-8">
       <div className="mx-auto max-w-4xl space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <section className="space-y-4">
               <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Basic Details</h2>
@@ -194,16 +217,40 @@ export default function CreatePostPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Duration (Months)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    name="durationMonths"
-                    value={formData.durationMonths}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g. 6"
-                  />
+                  <label className="text-sm font-semibold text-slate-700">Duration</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={durationUnit}
+                      onChange={(e) => {
+                        setDurationUnit(e.target.value as "MONTHS" | "YEARS");
+                        setDurationValue("");
+                      }}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="MONTHS">Months</option>
+                      <option value="YEARS">Years</option>
+                    </select>
+
+                    <select
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="">Select value</option>
+                      {(durationUnit === "YEARS"
+                        ? DURATION_YEAR_OPTIONS
+                        : DURATION_MONTH_OPTIONS
+                      ).map((option) => (
+                        <option key={option} value={option}>
+                          {option} {durationUnit === "YEARS" ? "Year" : "Month"}
+                          {option === "1" ? "" : "s"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Total duration: {totalDurationMonths || 0} month(s)
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -226,6 +273,7 @@ export default function CreatePostPage() {
                     name="applicationDeadline"
                     value={formData.applicationDeadline}
                     onChange={handleChange}
+                    min={todayDate}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     required
                   />
@@ -264,20 +312,21 @@ export default function CreatePostPage() {
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 md:flex-row md:justify-end">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   setFormData({
                     title: "",
                     description: "",
                     responsibilities: "",
                     location: "",
                     workType: "",
-                    durationMonths: "",
                     stipendAmount: "",
                     applicationDeadline: "",
                     requiredSkills: "",
                     optionalSkills: "",
-                  })
-                }
+                  });
+                  setDurationUnit("MONTHS");
+                  setDurationValue("");
+                }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Clear Form

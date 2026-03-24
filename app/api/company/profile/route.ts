@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const publicDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"];
+const companySizePattern = /^\d+\s*-\s*\d+$|^\d+\+$/;
+const COMPANY_SIZE_MAX_LENGTH = 12;
 
 export async function GET(req: Request) {
   try {
@@ -75,6 +77,51 @@ export async function POST(req: Request) {
       linkedinUrl,
     } = body;
 
+    const normalizedCompanySize = typeof companySize === "string" ? companySize.trim() : "";
+    const currentYear = new Date().getFullYear();
+
+    if (normalizedCompanySize) {
+      if (normalizedCompanySize.length > COMPANY_SIZE_MAX_LENGTH) {
+        return NextResponse.json(
+          { error: `Company Size must be ${COMPANY_SIZE_MAX_LENGTH} characters or fewer` },
+          { status: 400 }
+        );
+      }
+
+      if (!companySizePattern.test(normalizedCompanySize)) {
+        return NextResponse.json(
+          { error: "Company Size must be in format 11-50 or 200+" },
+          { status: 400 }
+        );
+      }
+
+      if (normalizedCompanySize.includes("-")) {
+        const [minRaw, maxRaw] = normalizedCompanySize.split("-").map((part) => part.trim());
+        const min = Number(minRaw);
+        const max = Number(maxRaw);
+
+        if (!Number.isFinite(min) || !Number.isFinite(max) || min <= 0 || max < min) {
+          return NextResponse.json(
+            { error: "Company Size range is invalid. Example: 11-50" },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    if (foundedYear !== null && foundedYear !== undefined) {
+      if (
+        typeof foundedYear !== "number" ||
+        !Number.isInteger(foundedYear) ||
+        foundedYear > currentYear
+      ) {
+        return NextResponse.json(
+          { error: `Founded Year cannot be greater than ${currentYear}` },
+          { status: 400 }
+        );
+      }
+    }
+
     if (!companyId) {
       return NextResponse.json(
         { error: "Company ID is required" },
@@ -141,7 +188,7 @@ export async function POST(req: Request) {
         data: {
           websiteUrl,
           industry,
-          companySize,
+          companySize: normalizedCompanySize,
           foundedYear,
           headquartersLocation,
           description,
@@ -163,7 +210,7 @@ export async function POST(req: Request) {
         companyId,
         websiteUrl,
         industry,
-        companySize,
+        companySize: normalizedCompanySize,
         foundedYear,
         headquartersLocation,
         description,

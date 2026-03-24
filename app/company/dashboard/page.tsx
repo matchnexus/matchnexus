@@ -13,6 +13,7 @@ type DashboardPost = {
   id: string;
   title: string;
   status: string;
+  applicationsCount?: number;
   applicationDeadline: string;
   workType?: string | null;
   location?: string | null;
@@ -29,7 +30,7 @@ export default function CompanyDashboardPage() {
   const publishedPostId = searchParams.get("published") || "";
   const [companyName, setCompanyName] = useState("");
   const [companyId, setCompanyId] = useState("");
-  const [publishedPosts, setPublishedPosts] = useState<DashboardPost[]>([]);
+  const [posts, setPosts] = useState<DashboardPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
 
   useEffect(() => {
@@ -50,15 +51,13 @@ export default function CompanyDashboardPage() {
         const data = await res.json();
 
         if (!res.ok) {
-          setPublishedPosts([]);
+          setPosts([]);
           return;
         }
 
-        const posts = (data.posts || []) as DashboardPost[];
-        const activePosts = posts.filter((post) => post.status === "ACTIVE");
-        setPublishedPosts(activePosts);
+        setPosts((data.posts || []) as DashboardPost[]);
       } catch {
-        setPublishedPosts([]);
+        setPosts([]);
       } finally {
         setLoadingPosts(false);
       }
@@ -68,30 +67,80 @@ export default function CompanyDashboardPage() {
   }, [companyId]);
 
   const heading = companyName ? `Welcome, ${companyName}` : "Welcome";
+  const activePosts = posts.filter((post) => post.status === "ACTIVE");
+  const totalPosts = posts.length;
+  const totalApplications = posts.reduce(
+    (total, post) => total + (post.applicationsCount || 0),
+    0
+  );
+  const averageApplicationsPerPost =
+    totalPosts > 0 ? (totalApplications / totalPosts).toFixed(1) : "0.0";
+  const statCards = [
+    {
+      title: "Total Posts",
+      value: loadingPosts ? "..." : String(totalPosts),
+      subtitle: "All internship posts created by your company.",
+      cardClass: "border-slate-600 bg-slate-950 text-white",
+      glowClass: "from-rose-600/35 via-rose-500/10 to-transparent",
+    },
+    {
+      title: "Total Applications",
+      value: loadingPosts ? "..." : String(totalApplications),
+      subtitle: `Avg. ${loadingPosts ? "..." : averageApplicationsPerPost} applications per post.`,
+      cardClass: "border-slate-600 bg-slate-950 text-white",
+      glowClass: "from-blue-500/30 via-sky-500/10 to-transparent",
+    },
+    {
+      title: "Active Posts",
+      value: loadingPosts ? "..." : String(activePosts.length),
+      subtitle: "Currently visible posts open for candidates.",
+      cardClass: "border-slate-600 bg-slate-950 text-white",
+      glowClass: "from-emerald-500/30 via-emerald-400/10 to-transparent",
+    },
+  ];
 
   return (
-    <section className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="relative h-52 w-full md:h-64">
-          <Image
-            src="/photos/hero.jpg"
-            alt="Office background"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-blue-900/60 to-transparent" />
+    <section className="relative overflow-hidden rounded-2xl border border-slate-700/60 p-4 md:p-6">
+      <Image
+        src="/photos/cccc.jpg"
+        alt="Dashboard background"
+        fill
+        className="object-cover"
+        priority
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/75 to-slate-950/85" />
 
-          <div className="absolute inset-0 flex flex-col justify-end p-6 text-white md:p-8">
-            <h1 className="text-2xl font-extrabold md:text-3xl">{heading}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-blue-100 md:text-base">
-              Manage company profile, publish internship opportunities, and track your hiring pipeline from one place.
-            </p>
-          </div>
+      <div className="relative z-10 space-y-6">
+        <div className="rounded-2xl border border-white/15 bg-slate-900/45 p-6 shadow-sm backdrop-blur-sm">
+          <h1 className="text-2xl font-extrabold text-white md:text-3xl">{heading}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-200 md:text-base">
+            Manage company profile, publish internship opportunities, and track your hiring pipeline from one place.
+          </p>
         </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {statCards.map((card) => (
+          <div
+            key={card.title}
+            className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${card.cardClass}`}
+          >
+            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${card.glowClass}`} />
+
+            <div className="relative flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-200">
+                  {card.title}
+                </p>
+                <p className="mt-2 text-4xl font-extrabold leading-none text-white">{card.value}</p>
+              </div>
+            </div>
+
+            <p className="relative mt-4 text-xs text-slate-400">{card.subtitle}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:p-6">
+      <div className="rounded-2xl border border-white/15 bg-slate-900/45 p-5 shadow-sm backdrop-blur-sm md:p-6">
 
         {publishedPostId && (
           <p className="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800">
@@ -103,20 +152,20 @@ export default function CompanyDashboardPage() {
           <p className="text-sm text-gray-500">Loading published posts...</p>
         )}
 
-        {!loadingPosts && publishedPosts.length === 0 && (
+        {!loadingPosts && activePosts.length === 0 && (
           <p className="text-sm text-gray-600">No published posts yet. Publish posts from the posts page to see them here.</p>
         )}
 
-        {!loadingPosts && publishedPosts.length > 0 && (
+        {!loadingPosts && activePosts.length > 0 && (
           <div className="space-y-2">
-            {publishedPosts.map((post) => (
+            {activePosts.map((post) => (
               <details
                 key={post.id}
                 open={post.id === publishedPostId}
-                className={`rounded-xl border p-4 ${
+                className={`rounded-xl border-2 border-black p-4 shadow-sm transition hover:shadow-md ${
                   post.id === publishedPostId
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-slate-300 bg-slate-50"
+                    ? "bg-amber-50 ring-2 ring-amber-300/80"
+                    : "bg-white/80"
                 }`}
               >
                 <summary className="cursor-pointer list-none">
@@ -149,7 +198,7 @@ export default function CompanyDashboardPage() {
                   </p>
                 </div>
 
-                <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
                   <p className="text-sm font-semibold text-gray-900">Description</p>
                   <p className="mt-1 text-sm text-gray-700">
                     {post.description || "No description provided."}
@@ -157,7 +206,7 @@ export default function CompanyDashboardPage() {
                 </div>
 
                 {post.responsibilities && (
-                  <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
                     <p className="text-sm font-semibold text-gray-900">Responsibilities</p>
                     <p className="mt-1 text-sm text-gray-700">{post.responsibilities}</p>
                   </div>
@@ -204,6 +253,7 @@ export default function CompanyDashboardPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </section>
   );
