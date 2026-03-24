@@ -96,7 +96,7 @@ export default function VerifyPage() {
       toast.success("Login Successfully!");
 
       // 3️⃣ Redirect after session created
-      router.push("/jobs");
+      router.push("student/user");
     } catch (error) {
       toast.error("Something went wrong");
     }

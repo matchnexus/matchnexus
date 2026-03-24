@@ -16,6 +16,7 @@ import {
 } from "react-icons/hi";
 import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 export default function UserFriendlyProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +35,10 @@ export default function UserFriendlyProfile() {
     linkedin: "https://linkedin.com/in/chamindu",
     cvFile: null as File | null,
   });
+  const { data: session } = useSession();
+
+  console.log("ddddddddd",session?.user.id);
+  console.log(session?.user.role);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [skills, setSkills] = useState<string[]>(["React", "Node.js", "SQL"]);
