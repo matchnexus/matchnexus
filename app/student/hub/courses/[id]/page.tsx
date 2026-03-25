@@ -87,7 +87,8 @@ export default function CourseDetailPage() {
     );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
+    <div style={{ backgroundColor: "#F8FBFF" }} className="min-h-screen p-4 md:p-6">
+      <div className="mx-auto max-w-3xl space-y-6">
       {/* Back */}
       <button
         onClick={() => router.back()}
@@ -170,6 +171,7 @@ export default function CourseDetailPage() {
             </li>
           ))}
         </ul>
+      </div>
       </div>
     </div>
   );
