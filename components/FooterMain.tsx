@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function FooterMain() {
+  const pathname = usePathname();
+
+  // Hide footer on admin pages (except login)
+  if (pathname.startsWith("/admin/") && pathname !== "/admin/login") {
+    return null;
+  }
   return (
     <footer className="relative mt-12 overflow-hidden">
       {/* Background image (put in /public/photos/footer-bg.jpg) */}
@@ -48,6 +55,7 @@ export default function FooterMain() {
             <h4 className="text-xl font-bold">Job Seeker</h4>
             <ul className="mt-4 space-y-2 text-sm text-white/85">
               <li><Link className="hover:text-white" href="/auth/login">Login</Link></li>
+              <li><Link className="hover:text-white" href="/admin/login">admin</Link></li>
               <li><Link className="hover:text-white" href="/jobs">Jobs</Link></li>
               <li><Link className="hover:text-white" href="/student/hub">Student hub</Link></li>
 

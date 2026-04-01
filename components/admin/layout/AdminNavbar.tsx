@@ -4,10 +4,37 @@ import { Button } from "flowbite-react";
 import { Toaster } from "react-hot-toast";
 import { HiBell, HiSearch, HiMenu, HiLogout } from "react-icons/hi";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export function AdminNavbar() {
+  const router = useRouter();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const res = await fetch("/api/admin/logout", {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        toast.success("Logged out successfully");
+        setTimeout(() => {
+          router.push("/");
+        }, 500);
+      } else {
+        toast.error("Logout failed");
+        setIsLoggingOut(false);
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("An error occurred");
+      setIsLoggingOut(false);
+    }
+  };
 
   // Mock notifications data
   const notifications = [
@@ -137,9 +164,13 @@ export function AdminNavbar() {
                   <HiBell className="h-4 w-4" />
                   Settings
                 </button>
-                <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100">
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100 disabled:opacity-50"
+                >
                   <HiLogout className="h-4 w-4" />
-                  Logout
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
               </div>
             </div>

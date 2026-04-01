@@ -11,13 +11,13 @@ export default function CompanyNavbar() {
   const [companyName, setCompanyName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("companyName") || "";
+    const storedName = localStorage.getItem("studentName") || "";
     setCompanyName(storedName);
   }, []);
 
   const tabs = [
-    { name: "Profile", href: "/auth/student/user" },
     { name: "jobs", href: "/auth/student/jobs" },
+    { name: "Profile", href: "/auth/student/user" },
     { name: "suggesion", href: "/" },
     { name: "courses", href: "/" },
   ];
@@ -42,10 +42,15 @@ export default function CompanyNavbar() {
 
   const displayTitle = companyName ? `Welcome, ${companyName}` : "Welcome";
 
+  const handelLogout = () => {
+    signOut({ callbackUrl: "/auth/login" });
+    localStorage.removeItem("studentName");
+  };
+
   return (
     <header className="fixed top-0 left-0 z-50 w-full border-b bg-white">
       <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
-        <Link href="/company/dashboard" className="flex items-center gap-2">
+        <Link href="/auth/student/jobs" className="flex items-center gap-2">
           <span className="text-xl font-extrabold tracking-tight text-gray-900">
             {displayTitle}
           </span>
@@ -90,24 +95,19 @@ export default function CompanyNavbar() {
           <div className="mt-6 md:hidden">
             <Link
               href="/auth/login"
-              onClick={
-                () => signOut({ callbackUrl: "/auth/login" })
-              }
+              onClick={handelLogout}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
             >
               <span className="text-base leading-none">🚪</span>
               <span>Logout</span>
             </Link>
           </div>
-          
         </nav>
 
         <div className="hidden md:flex md:items-center md:gap-4">
           <Link
             href="/auth/login"
-            onClick={
-              () => signOut({ callbackUrl: "/auth/login" })
-            }
+            onClick={handelLogout}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
           >
             <span className="text-base leading-none"></span>

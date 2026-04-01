@@ -4,6 +4,7 @@ import { Card, Label, TextInput, Button, Checkbox } from "flowbite-react";
 import Link from "next/link";
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 // Types
 type LoginFormData = {
@@ -89,8 +90,8 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (response.ok) {
-        
-        alert("Login Success!");
+        localStorage.setItem("studentName", result.studentName);
+        toast.success("Login Success!");
         router.push("/auth/verify"); 
       } else {
         
@@ -98,7 +99,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login failed:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     }
   };
 

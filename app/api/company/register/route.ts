@@ -18,6 +18,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (String(password).length !== 8) {
+      return NextResponse.json(
+        { error: "Password must be exactly 8 characters" },
+        { status: 400 }
+      );
+    }
+
     const emailDomain = email.split("@")[1]?.toLowerCase();
 
     if (!emailDomain) {

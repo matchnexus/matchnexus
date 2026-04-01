@@ -138,10 +138,12 @@ model Student {
   dob        DateTime?
   institute  String
   department String
-  studentId  String
+  studentId  String @unique
   degreeType DegreeType
   grade      String?
   zScore     Decimal?   @db.Decimal(5, 4)
+
+
 
   githubLink        String?
   linkedinLink      String?

@@ -71,8 +71,8 @@ export default function CompanyRegisterPage() {
 
     if (!form.password) {
       nextErrors.password = "Password is required";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "Min 6 characters required";
+    } else if (form.password.length !== 8) {
+      nextErrors.password = "Password must be exactly 8 characters";
     }
 
     if (!form.confirmPassword) {
@@ -197,6 +197,8 @@ export default function CompanyRegisterPage() {
               placeholder="••••••••"
               value={form.password}
               onChange={handleChange}
+              minLength={8}
+              maxLength={8}
               color={errors.password ? "failure" : "gray"}
               sizing="md"
             />
@@ -216,6 +218,8 @@ export default function CompanyRegisterPage() {
               placeholder="••••••••"
               value={form.confirmPassword}
               onChange={handleChange}
+              minLength={8}
+              maxLength={8}
               color={errors.confirmPassword ? "failure" : "gray"}
               sizing="md"
             />

@@ -23,7 +23,7 @@ export default function JobDetailsPage({ params }: Props) {
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Navigation - Back Button */}
         <Link
-          href="/jobs"
+          href="/auth/student/jobs"
           className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-xs uppercase tracking-widest transition-all w-max group"
         >
           <HiArrowLeft className="transition-transform group-hover:-translate-x-1" />

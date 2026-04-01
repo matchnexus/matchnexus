@@ -4,6 +4,7 @@ import { Card, Label, TextInput, Button, Select } from "flowbite-react";
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 // Types
 type FormData = {
@@ -59,6 +60,17 @@ export default function RegisterPage() {
       newErrors.email = "Invalid format. Use 'itXXXXXXXX@my.sliit.lk'";
     }
 
+    // Password Validation
+    if (!form.password) {
+      newErrors.password = "Password is required";
+    } else if (form.password.length < 6) {
+      newErrors.password = "Minimum 6 characters";
+    } else if (!/[A-Z]/.test(form.password)) {
+      newErrors.password = "Must include at least one uppercase letter";
+    } else if (!/[0-9]/.test(form.password)) {
+      newErrors.password = "Must include at least one number";
+    }
+
     // 3. Student ID Validation
     if (!form.studentId.trim()) {
       newErrors.studentId = "Student ID is required";
@@ -93,20 +105,20 @@ export default function RegisterPage() {
         const response = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form)
+          body: JSON.stringify(form),
         });
 
         const result = await response.json();
 
         if (response.ok) {
-          alert("Success: " + result.message);
-          router.push("/auth/login"); 
+          toast.success("Success: " + result.message);
+          router.push("/auth/login");
         } else {
-          alert("Error: " + result.message);
+          toast.error("Error: " + result.message);
         }
       } catch (error) {
         console.error("Registration failed:", error);
-        alert("Something went wrong. Please try again.");
+        toast.error("Something went wrong. Please try again.");
       }
     }
   };

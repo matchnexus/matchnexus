@@ -44,6 +44,11 @@ export default function CreatePostPage() {
   const canSubmit =
     formData.title.trim() &&
     formData.description.trim() &&
+    formData.responsibilities.trim() &&
+    formData.location.trim() &&
+    formData.workType &&
+    durationValue &&
+    formData.requiredSkills.trim() &&
     formData.applicationDeadline;
 
   useEffect(() => {
@@ -73,6 +78,30 @@ export default function CreatePostPage() {
     if (formData.applicationDeadline < todayDate) {
       setIsError(true);
       setMessage("Application deadline cannot be in the past.");
+      return;
+    }
+
+    if (!formData.title.trim() || !formData.description.trim() || !formData.responsibilities.trim()) {
+      setIsError(true);
+      setMessage("Title, description, and responsibilities are required.");
+      return;
+    }
+
+    if (!formData.location.trim() || !formData.workType) {
+      setIsError(true);
+      setMessage("Location and work type are required.");
+      return;
+    }
+
+    if (!durationValue) {
+      setIsError(true);
+      setMessage("Please select the role duration.");
+      return;
+    }
+
+    if (!formData.requiredSkills.trim()) {
+      setIsError(true);
+      setMessage("Required skills are mandatory.");
       return;
     }
 
@@ -181,6 +210,7 @@ export default function CreatePostPage() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="List key tasks and responsibilities"
                   rows={3}
+                  required
                 />
               </div>
             </section>
@@ -198,6 +228,7 @@ export default function CreatePostPage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="e.g. Colombo"
+                    required
                   />
                 </div>
 
@@ -208,6 +239,7 @@ export default function CreatePostPage() {
                     value={formData.workType}
                     onChange={handleChange}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
                   >
                     <option value="">Select work type</option>
                     <option value="REMOTE">Remote</option>
@@ -235,6 +267,7 @@ export default function CreatePostPage() {
                       value={durationValue}
                       onChange={(e) => setDurationValue(e.target.value)}
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      required
                     >
                       <option value="">Select value</option>
                       {(durationUnit === "YEARS"
@@ -293,6 +326,7 @@ export default function CreatePostPage() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="React, TypeScript, Git"
+                  required
                 />
               </div>
 

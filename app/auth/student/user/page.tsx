@@ -1,7 +1,15 @@
 "use client";
 
-import { Card, Label, Button, Avatar, Badge, Select } from "flowbite-react";
-import { useState, ChangeEvent, useRef, KeyboardEvent } from "react";
+import {
+  Card,
+  Label,
+  Button,
+  Avatar,
+  Badge,
+  Select,
+  Dropdown,
+} from "flowbite-react";
+import { useState, ChangeEvent, useRef, KeyboardEvent, useEffect } from "react";
 import {
   HiLocationMarker,
   HiDownload,
@@ -16,33 +24,90 @@ import {
 } from "react-icons/hi";
 import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
 import toast from "react-hot-toast";
-import { useSession } from "next-auth/react";
 
 export default function UserFriendlyProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    studentId: "IT21004567",
-    firstName: "Chamindu",
-    lastName: "Perera",
-    address: "123, Main Street, Colombo",
-    dob: "2000-05-15",
-    institute: "SLIIT",
-    department: "Computing",
-    degreeType: "Undergraduate",
-    grade: "3.85",
-    github: "https://github.com/chamindu",
-    linkedin: "https://linkedin.com/in/chamindu",
+    studentId: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    dob: "",
+    institute: "",
+    department: "",
+    degreeType: "",
+    grade: "",
+    github: "",
+    linkedin: "",
     cvFile: null as File | null,
   });
-  const { data: session } = useSession();
-
-  console.log("ddddddddd",session?.user.id);
-  console.log(session?.user.role);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [skills, setSkills] = useState<string[]>(["React", "Node.js", "SQL"]);
-  const [skillInput, setSkillInput] = useState("");
+  const [allSkills, setAllSkills] = useState<string[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const skillsRef = useRef<HTMLDivElement>(null);
+  const [existingResumePath, setExistingResumePath] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        const data = await res.json();
+        const student = data.user.student;
+
+        setForm({
+          studentId: student?.studentId || "",
+          firstName: student?.firstName || "",
+          lastName: student?.lastName || "",
+          address: student?.address || "",
+          dob: student?.dob
+            ? new Date(student.dob).toISOString().split("T")[0]
+            : "",
+          institute: student?.institute || "",
+          department: student?.department || "",
+          degreeType: student?.degreeType || "",
+          grade: student?.grade?.toString() || "",
+          github: student?.githubLink || "", // ✅ fixed
+          linkedin: student?.linkedinLink || "", // ✅ fixed
+          cvFile: null,
+        });
+
+        // ✅ fixed relation name
+        if (student?.skills) {
+          setSelectedSkills(student.skills.map((s: any) => s.skill.name));
+        }
+
+        // ✅ show existing resume filename
+        const latestResume = student?.resumes?.[0];
+        if (latestResume) {
+          setExistingResumePath(latestResume.filePath); // add this state
+        }
+
+        const skillRes = await fetch("/api/skills");
+        const skillData = await skillRes.json();
+        setAllSkills(skillData.map((s: any) => s.name));
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load data");
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (skillsRef.current && !skillsRef.current.contains(e.target as Node)) {
+        setSkillsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -87,27 +152,57 @@ export default function UserFriendlyProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleUpdate = () => {
-    if (validateForm()) {
-      const formattedGPA = parseFloat(form.grade).toFixed(2);
-      setForm({ ...form, grade: formattedGPA });
-      toast.success("Update Successfully!");
+  // Replace your existing handleUpdate function with this:
+
+  const handleUpdate = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const formData = new FormData();
+
+      // ── Core student fields ──────────────────────────────────────────────
+      formData.append("studentId", form.studentId);
+      formData.append("firstName", form.firstName);
+      formData.append("lastName", form.lastName);
+      formData.append("address", form.address);
+      formData.append("institute", form.institute);
+      formData.append("department", form.department);
+      formData.append("degreeType", form.degreeType);
+
+      if (form.dob) formData.append("dob", form.dob);
+      if (form.grade) formData.append("grade", form.grade);
+      if (form.github) formData.append("github", form.github);
+      if (form.linkedin) formData.append("linkedin", form.linkedin);
+
+      // ── Skills – send as JSON array of names ────────────────────────────
+      formData.append("skills", JSON.stringify(selectedSkills));
+
+      // ── CV file (only if a new one was chosen) ───────────────────────────
+      if (form.cvFile) {
+        formData.append("cvFile", form.cvFile);
+      }
+
+      const res = await fetch("/api/profile/update", {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Update failed");
+        return;
+      }
+
+      toast.success("Updated successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
     }
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setForm({ ...form, cvFile: e.target.files[0] });
-    }
-  };
-
-  const handleSkillKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && skillInput.trim() !== "") {
-      e.preventDefault();
-      if (!skills.includes(skillInput.trim())) {
-        setSkills([...skills, skillInput.trim()]);
-      }
-      setSkillInput("");
     }
   };
 
@@ -125,7 +220,7 @@ export default function UserFriendlyProfile() {
   };
 
   const removeSkill = (skillToRemove: string) => {
-    setSkills(skills.filter((skill) => skill !== skillToRemove));
+    setSelectedSkills(selectedSkills.filter((s) => s !== skillToRemove));
   };
 
   return (
@@ -352,8 +447,8 @@ export default function UserFriendlyProfile() {
                       },
                     }}
                   >
-                    <option value="Undergraduate">Undergraduate</option>
-                    <option value="Graduate">Graduate</option>
+                    <option value="UNDERGRADUATE">Undergraduate</option>
+                    <option value="GRADUATE">Graduate</option>
                   </Select>
                 </div>
               </div>
@@ -378,14 +473,16 @@ export default function UserFriendlyProfile() {
               </div>
 
               {/* Skills and CV Section remains same */}
-              <div className="space-y-3 group">
+
+              <div className="space-y-3" ref={skillsRef}>
                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Professional Skills (Type & Press Enter)
+                  Professional Skills
                 </Label>
-                <div className="relative">
-                  <HiLightningBolt className="absolute left-3 top-4 text-slate-300" />
-                  <div className="w-full min-h-[50px] pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl focus-within:ring-2 focus-within:ring-blue-100 flex flex-wrap gap-2 items-center">
-                    {skills.map((skill) => (
+
+                {/* Selected Skill Tags */}
+                {selectedSkills.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    {selectedSkills.map((skill) => (
                       <span
                         key={skill}
                         className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm"
@@ -393,21 +490,100 @@ export default function UserFriendlyProfile() {
                         {skill}
                         <button
                           type="button"
-                          onClick={() => removeSkill(skill)}
-                          className="text-slate-400 hover:text-red-500 transition-colors"
+                          onClick={() =>
+                            setSelectedSkills(
+                              selectedSkills.filter((s) => s !== skill),
+                            )
+                          }
+                          className="text-slate-400 hover:text-red-500 ml-0.5"
                         >
-                          <HiX size={14} />
+                          <HiX size={13} />
                         </button>
                       </span>
                     ))}
-                    <input
-                      value={skillInput}
-                      onChange={(e) => setSkillInput(e.target.value)}
-                      onKeyDown={handleSkillKeyDown}
-                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 min-w-[120px] p-1"
-                      placeholder={skills.length === 0 ? "Add skills..." : ""}
-                    />
                   </div>
+                )}
+
+                {/* Custom Dropdown Trigger */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSkillsOpen((prev) => !prev)}
+                    className={`w-full flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                      skillsOpen ? "ring-2 ring-blue-100" : ""
+                    }`}
+                  >
+                    <span
+                      className={
+                        selectedSkills.length === 0
+                          ? "text-slate-400 font-semibold"
+                          : "text-slate-700"
+                      }
+                    >
+                      {selectedSkills.length === 0
+                        ? "Select Skills"
+                        : `${selectedSkills.length} skill${selectedSkills.length > 1 ? "s" : ""} selected`}
+                    </span>
+                    <svg
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${skillsOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Panel */}
+                  {skillsOpen && (
+                    <div className="absolute z-50 mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
+                      <div className="max-h-48 overflow-y-auto py-1">
+                        {allSkills.map((skill) => {
+                          const isSelected = selectedSkills.includes(skill);
+                          return (
+                            <button
+                              key={skill}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSkills(
+                                  isSelected
+                                    ? selectedSkills.filter((s) => s !== skill)
+                                    : [...selectedSkills, skill],
+                                );
+                              }}
+                              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors text-left ${
+                                isSelected
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              <span>{skill}</span>
+                              {isSelected && (
+                                <svg
+                                  className="w-4 h-4 text-blue-500 shrink-0"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2.5}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -421,7 +597,11 @@ export default function UserFriendlyProfile() {
                       Resume / CV
                     </p>
                     <p className="text-sm font-bold text-slate-700 truncate max-w-[150px]">
-                      {form.cvFile ? form.cvFile.name : "my_cv_v2.pdf"}
+                      {form.cvFile
+                        ? form.cvFile.name
+                        : existingResumePath
+                          ? existingResumePath.split("/").pop()
+                          : "No CV uploaded"}
                     </p>
                   </div>
                 </div>

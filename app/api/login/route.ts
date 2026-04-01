@@ -8,6 +8,9 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.findUnique({
     where: { email },
+    include: {
+      student: true,
+    },
   });
 
   if (!user) {
@@ -23,12 +26,14 @@ export async function POST(req: Request) {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   await sendOTPEmail({ to: email, otp });
+  const fullName = `${user.student?.firstName ?? ""}`.trim();
 
-  const res = NextResponse.json({ message: "OTP sent" });
+  const res = NextResponse.json({ message: "OTP sent", studentName: fullName });
 
-  res.cookies.set("otp", otp, { httpOnly: true, maxAge: 300 });
-  res.cookies.set("email", email, { httpOnly: true, maxAge: 300 });
-  res.cookies.set("password", password, { httpOnly: true, maxAge: 300 });
+  res.cookies.set("otp", otp, { httpOnly: true, maxAge: 1000 });
+  res.cookies.set("userId", user.id, { httpOnly: true, maxAge: 1000 });
+  res.cookies.set("email", email, { httpOnly: true, maxAge: 1000 });
+  res.cookies.set("password", password, { httpOnly: true, maxAge: 1000 });
 
   return res;
 }

@@ -60,8 +60,8 @@ export default function CompanyLoginPage() {
 
     if (!form.password) {
       nextErrors.password = "Password is required";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "Min 6 characters required";
+    } else if (form.password.length < 8) {
+      nextErrors.password = "Min 8 characters required";
     }
 
     return nextErrors;
@@ -168,6 +168,7 @@ export default function CompanyLoginPage() {
                 placeholder="••••••••"
                 value={form.password}
                 onChange={handleChange}
+                minLength={8}
                 color={errors.password ? "failure" : "gray"}
                 sizing="lg"
               />

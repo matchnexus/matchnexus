@@ -193,10 +193,28 @@ export default function CompanyProfilePage() {
     const normalizedCompanySize = formData.companySize.trim();
     const foundedYearRaw = formData.foundedYear.trim();
     const currentYear = new Date().getFullYear();
+    const requiredProfileFields = [
+      formData.websiteUrl.trim(),
+      formData.industry.trim(),
+      normalizedCompanySize,
+      foundedYearRaw,
+      formData.headquartersLocation.trim(),
+      formData.description.trim(),
+      formData.missionStatement.trim(),
+      formData.workCulture.trim(),
+      formData.benefits.trim(),
+      formData.linkedinUrl.trim(),
+    ];
 
     if (!companyId) {
       setIsError(true);
       setMessage("Company ID not found. Please login again.");
+      return;
+    }
+
+    if (requiredProfileFields.some((value) => !value)) {
+      setIsError(true);
+      setMessage("Please fill all profile fields before saving.");
       return;
     }
 
@@ -329,6 +347,7 @@ export default function CompanyProfilePage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="https://yourcompany.com"
+                    required
                   />
                 </div>
 
@@ -341,6 +360,7 @@ export default function CompanyProfilePage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="https://linkedin.com/company/..."
+                    required
                   />
                 </div>
               </div>
@@ -355,6 +375,7 @@ export default function CompanyProfilePage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="Software, Finance..."
+                    required
                   />
                 </div>
 
@@ -365,6 +386,7 @@ export default function CompanyProfilePage() {
                     value={formData.companySize}
                     onChange={handleChange}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
                   >
                     <option value="">Select company size</option>
                     {COMPANY_SIZE_OPTIONS.map((sizeOption) => (
@@ -388,6 +410,7 @@ export default function CompanyProfilePage() {
                     maxLength={4}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="2018"
+                    required
                   />
                 </div>
               </div>
@@ -401,6 +424,7 @@ export default function CompanyProfilePage() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Colombo, Sri Lanka"
+                  required
                 />
               </div>
 
@@ -413,6 +437,7 @@ export default function CompanyProfilePage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="What does your company do?"
                   rows={3}
+                  required
                 />
               </div>
 
@@ -426,6 +451,7 @@ export default function CompanyProfilePage() {
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="Your mission and long-term vision"
                     rows={4}
+                    required
                   />
                 </div>
 
@@ -438,6 +464,7 @@ export default function CompanyProfilePage() {
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="Describe your team culture"
                     rows={4}
+                    required
                   />
                 </div>
               </div>
@@ -451,6 +478,7 @@ export default function CompanyProfilePage() {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Health insurance, remote options, training support..."
                   rows={3}
+                  required
                 />
               </div>
 
