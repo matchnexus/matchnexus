@@ -24,6 +24,7 @@ import {
 } from "react-icons/hi";
 import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 
 export default function UserFriendlyProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,20 +72,18 @@ export default function UserFriendlyProfile() {
           department: student?.department || "",
           degreeType: student?.degreeType || "",
           grade: student?.grade?.toString() || "",
-          github: student?.githubLink || "", // ✅ fixed
-          linkedin: student?.linkedinLink || "", // ✅ fixed
+          github: student?.githubLink || "",
+          linkedin: student?.linkedinLink || "",
           cvFile: null,
         });
 
-        // ✅ fixed relation name
         if (student?.skills) {
           setSelectedSkills(student.skills.map((s: any) => s.skill.name));
         }
 
-        // ✅ show existing resume filename
         const latestResume = student?.resumes?.[0];
         if (latestResume) {
-          setExistingResumePath(latestResume.filePath); // add this state
+          setExistingResumePath(latestResume.filePath);
         }
 
         const skillRes = await fetch("/api/skills");
@@ -130,18 +129,14 @@ export default function UserFriendlyProfile() {
     if (!form.firstName.trim()) newErrors.firstName = "First name is required";
     if (!form.address.trim()) newErrors.address = "Address is required";
 
-    // --- Future Date Validation Start ---
     if (form.dob) {
       const selectedDate = new Date(form.dob);
       const today = new Date();
-
       today.setHours(0, 0, 0, 0);
-
       if (selectedDate > today) {
         newErrors.dob = "Birthday cannot be in the future";
       }
     }
-    // --- Future Date Validation End ---
 
     const gpa = parseFloat(form.grade);
     if (isNaN(gpa) || gpa < 0 || gpa > 4.0) {
@@ -152,15 +147,12 @@ export default function UserFriendlyProfile() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Replace your existing handleUpdate function with this:
-
   const handleUpdate = async () => {
     if (!validateForm()) return;
 
     try {
       const formData = new FormData();
 
-      // ── Core student fields ──────────────────────────────────────────────
       formData.append("studentId", form.studentId);
       formData.append("firstName", form.firstName);
       formData.append("lastName", form.lastName);
@@ -174,10 +166,8 @@ export default function UserFriendlyProfile() {
       if (form.github) formData.append("github", form.github);
       if (form.linkedin) formData.append("linkedin", form.linkedin);
 
-      // ── Skills – send as JSON array of names ────────────────────────────
       formData.append("skills", JSON.stringify(selectedSkills));
 
-      // ── CV file (only if a new one was chosen) ───────────────────────────
       if (form.cvFile) {
         formData.append("cvFile", form.cvFile);
       }
@@ -224,413 +214,492 @@ export default function UserFriendlyProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] py-10 px-4 md:px-8 font-sans">
-      <div className="mx-auto max-w-6xl">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">
-            My Profile
-          </h1>
-          <Button
-            onClick={handleUpdate}
-            className="rounded-xl bg-[#87D01A] enabled:hover:bg-[#76B817] shadow-lg border-none px-8"
+    <div className="min-h-screen bg-white pb-10 font-sans -mx-4 -mt-6">
+      {/* --- Hero Header --- */}
+      <section className="relative bg-sky-700 py-16 px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent opacity-50" />
+        <div className="relative z-10 mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
           >
-            <HiSave className="mr-2 h-5 w-5" />
-            <span className="font-bold uppercase">Update Changes</span>
-          </Button>
+            <h1 className="text-4xl font-extrabold text-white md:text-5xl tracking-tight">
+              My Profile
+            </h1>
+            <p className="mt-2 text-white/80 font-medium text-lg">
+              Manage your personal and academic information
+            </p>
+          </motion.div>
+
+          <motion.button
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleUpdate}
+            className="flex items-center gap-2 rounded-xl bg-sky-800 px-8 py-3 text-sm font-extrabold text-white transition-all hover:bg-sky-900 shadow-lg uppercase tracking-wider"
+          >
+            <HiSave className="h-5 w-5" />
+            Update Changes
+          </motion.button>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* --- Main Content --- */}
+      <div className="mx-auto mt-16 max-w-7xl px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
           {/* Left Side Card */}
-          <div className="lg:col-span-4 space-y-4">
-            <Card className="rounded-[2rem] border-none shadow-sm bg-white overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-24 -m-6 mb-0"></div>
-              <div className="flex flex-col items-center -mt-12 relative z-10 px-6 pb-6">
-                <Avatar
-                  img="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
-                  rounded
-                  size="xl"
-                  className="ring-4 ring-white rounded-full shadow-lg mb-4"
-                />
-                <div className="space-y-1 w-full text-center">
-                  <Label className="text-[10px] font-black uppercase text-slate-400">
-                    Full Name
-                  </Label>
-                  <input
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    className={`text-xl font-black text-slate-800 text-center border-none focus:ring-2 ${errors.firstName ? "ring-2 ring-red-500 bg-red-50" : "focus:ring-blue-100 bg-slate-50"} w-full rounded-xl py-1 transition-all`}
-                  />
-                </div>
-                <div className="mt-4 w-full flex flex-col items-center">
-                  <div
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border ${errors.studentId ? "border-red-500" : "border-blue-100"}`}
-                  >
-                    <HiFingerPrint className="text-blue-500" />
-                    <input
-                      name="studentId"
-                      value={form.studentId}
-                      onChange={handleChange}
-                      className="bg-transparent border-none focus:ring-0 p-0 text-[11px] font-black uppercase tracking-widest text-blue-600 w-24 text-center"
-                      placeholder="IT NUMBER"
-                    />
-                  </div>
-                </div>
-              </div>
+          <div className="lg:col-span-4 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              <Card className="border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white">
+                {/* Card top accent bar — matches Jobs page sky-700 hero */}
+                <div className="bg-sky-700 h-20 -m-6 mb-0" />
 
-              <div className="w-full mt-4 space-y-4 pt-6 border-t border-slate-100 px-6 pb-6">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">
-                    GPA Score
-                  </Label>
-                  <div className="relative">
-                    <HiAcademicCap
-                      className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors text-lg ${errors.grade ? "text-red-400" : "text-slate-300"}`}
-                    />
+                <div className="flex flex-col items-center -mt-10 relative z-10 px-6 pb-6">
+                  <Avatar
+                    img="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
+                    rounded
+                    size="xl"
+                    className="ring-4 ring-white rounded-full shadow-lg mb-4"
+                  />
+
+                  {/* Full Name */}
+                  <div className="space-y-1 w-full text-center">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">
+                      Full Name
+                    </Label>
                     <input
-                      name="grade"
-                      type="number"
-                      step="0.01"
-                      value={form.grade}
+                      name="firstName"
+                      value={form.firstName}
                       onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-slate-700 focus:ring-2 transition-all ${errors.grade ? "bg-red-50 ring-2 ring-red-500" : "bg-slate-50 focus:ring-blue-100"}`}
+                      className={`text-xl font-extrabold text-gray-900 text-center border-none focus:ring-2 ${
+                        errors.firstName
+                          ? "ring-2 ring-red-500 bg-red-50"
+                          : "focus:ring-sky-200 bg-sky-50/50"
+                      } w-full rounded-xl py-1 transition-all`}
                     />
+                    {errors.firstName && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase">
+                        {errors.firstName}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Student ID Badge */}
+                  <div className="mt-4 w-full flex flex-col items-center">
+                    <Badge className="rounded-full px-4 py-1.5 font-bold text-[10px] bg-sky-800 text-white border border-sky-200 uppercase flex items-center gap-1.5">
+                      <input
+                        name="studentId"
+                        value={form.studentId}
+                        onChange={handleChange}
+                        className={`bg-transparent border-none focus:ring-0 p-0 text-[11px] font-extrabold uppercase tracking-widest text-white w-24 text-center ${
+                          errors.studentId ? "placeholder:text-red-400" : ""
+                        }`}
+                        placeholder="IT NUMBER"
+                      />
+                    </Badge>
+                    {errors.studentId && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase mt-1">
+                        {errors.studentId}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-4">
+
+                {/* GPA & Links */}
+                <div className="w-full space-y-4 pt-6 border-t border-gray-100 px-6 pb-6">
+                  {/* GPA */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest ml-1">
+                      GPA Score
+                    </Label>
+                    <div className="relative">
+                      <HiAcademicCap
+                        className={`absolute left-3 top-1/2 -translate-y-1/2 text-lg ${
+                          errors.grade ? "text-red-400" : "text-sky-400"
+                        }`}
+                      />
+                      <input
+                        name="grade"
+                        type="number"
+                        step="0.01"
+                        value={form.grade}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-gray-700 focus:ring-2 transition-all ${
+                          errors.grade
+                            ? "bg-red-50 ring-2 ring-red-500"
+                            : "bg-sky-50/50 focus:ring-sky-200"
+                        }`}
+                      />
+                    </div>
+                    {errors.grade && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase ml-1">
+                        {errors.grade}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* GitHub */}
                   <div className="relative group">
                     <AiFillGithub
                       size={18}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-800"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900"
                     />
                     <input
                       name="github"
                       value={form.github}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-mono text-slate-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                      placeholder="GitHub URL"
+                      className="w-full pl-10 pr-4 py-3 bg-sky-50/50 border-none rounded-xl text-xs font-mono text-gray-500 focus:ring-2 focus:ring-sky-200 transition-all"
                     />
                   </div>
+
+                  {/* LinkedIn */}
                   <div className="relative group">
                     <AiFillLinkedin
                       size={18}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-sky-600"
                     />
                     <input
                       name="linkedin"
                       value={form.linkedin}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-xs font-mono text-slate-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                      placeholder="LinkedIn URL"
+                      className="w-full pl-10 pr-4 py-3 bg-sky-50/50 border-none rounded-xl text-xs font-mono text-gray-500 focus:ring-2 focus:ring-sky-200 transition-all"
                     />
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           </div>
 
           {/* Right Side Details */}
           <div className="lg:col-span-8 space-y-6">
-            <Card className="rounded-[2rem] border-none shadow-sm bg-white p-6">
-              <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
-                <span className="w-2 h-6 bg-[#87D01A] rounded-full"></span>{" "}
-                ACADEMIC & PROFESSIONAL DETAILS
-              </h3>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white p-6">
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Institute
-                  </Label>
-                  <div className="relative">
-                    <HiLibrary className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 z-10" />
-                    <input
-                      name="institute"
-                      value={form.institute}
+                {/* Section heading — matches Jobs page "Latest Opportunities" style */}
+                <div className="mb-8 pb-6 border-b border-gray-100">
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Academic &{" "}
+                    <span className="text-sky-600">Professional Details</span>
+                  </h2>
+                  <p className="text-gray-500 mt-1 font-medium">
+                    Keep your information up to date
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
+
+                  {/* Institute */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Institute
+                    </Label>
+                    <div className="relative">
+                      <HiLibrary className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 z-10" />
+                      <input
+                        name="institute"
+                        value={form.institute}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-4 py-3 bg-sky-50/50 border-none rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-sky-200 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Birthday */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Birthday
+                    </Label>
+                    <div className="relative">
+                      <HiCalendar
+                        className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 transition-colors ${
+                          errors.dob ? "text-red-400" : "text-sky-400"
+                        }`}
+                      />
+                      <input
+                        type="date"
+                        name="dob"
+                        value={form.dob}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-gray-700 focus:ring-2 transition-all ${
+                          errors.dob
+                            ? "bg-red-50 ring-2 ring-red-500"
+                            : "bg-sky-50/50 focus:ring-sky-200"
+                        }`}
+                      />
+                    </div>
+                    {errors.dob && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1 uppercase ml-1">
+                        {errors.dob}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Department Select */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Department
+                    </Label>
+                    <Select
+                      name="department"
+                      value={form.department}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-100"
-                    />
+                      icon={HiOfficeBuilding}
+                      required
+                      theme={{
+                        field: {
+                          select: {
+                            base: "block w-full border-none",
+                            colors: {
+                              gray: "bg-sky-50/50 text-gray-700 font-bold text-sm rounded-xl focus:ring-2 focus:ring-sky-200",
+                            },
+                            withIcon: { on: "pl-11" },
+                          },
+                          icon: {
+                            base: "absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none",
+                            svg: "h-5 w-5 text-sky-400",
+                          },
+                        },
+                      }}
+                    >
+                      <option value="Computing">Computing</option>
+                      <option value="Business Management">Business Management</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Accounting">Accounting</option>
+                    </Select>
+                  </div>
+
+                  {/* Degree Type Select */}
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Degree Type
+                    </Label>
+                    <Select
+                      name="degreeType"
+                      value={form.degreeType}
+                      onChange={handleChange}
+                      icon={HiAcademicCap}
+                      required
+                      theme={{
+                        field: {
+                          select: {
+                            base: "block w-full border-none",
+                            colors: {
+                              gray: "bg-sky-50/50 text-gray-700 font-bold text-sm rounded-xl focus:ring-2 focus:ring-sky-200",
+                            },
+                            withIcon: { on: "pl-11" },
+                          },
+                          icon: {
+                            base: "absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none",
+                            svg: "h-5 w-5 text-sky-400",
+                          },
+                        },
+                      }}
+                    >
+                      <option value="UNDERGRADUATE">Undergraduate</option>
+                      <option value="GRADUATE">Graduate</option>
+                    </Select>
                   </div>
                 </div>
 
-                {/* Birthday with Validation */}
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Birthday
+                {/* Address */}
+                <div className="space-y-1 mb-6">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                    Residential Address
                   </Label>
                   <div className="relative">
-                    <HiCalendar
-                      className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 transition-colors ${errors.dob ? "text-red-400" : "text-slate-300"}`}
-                    />
-                    <input
-                      type="date"
-                      name="dob"
-                      value={form.dob}
-                      onChange={handleChange}
-                      className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-slate-700 focus:ring-2 transition-all ${
-                        errors.dob
-                          ? "bg-red-50 ring-2 ring-red-500"
-                          : "bg-slate-50 focus:ring-blue-100"
+                    <HiLocationMarker
+                      className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
+                        errors.address ? "text-red-400" : "text-sky-400"
                       }`}
                     />
+                    <input
+                      name="address"
+                      value={form.address}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-gray-700 focus:ring-2 transition-all ${
+                        errors.address
+                          ? "bg-red-50 ring-2 ring-red-500"
+                          : "bg-sky-50/50 focus:ring-sky-200"
+                      }`}
+                      placeholder="Enter your address"
+                    />
                   </div>
-                  {errors.dob && (
-                    <p className="text-[10px] text-red-500 font-bold mt-1 uppercase ml-1">
-                      {errors.dob}
+                  {errors.address && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase ml-1">
+                      {errors.address}
                     </p>
                   )}
                 </div>
 
-                {/* Department Select */}
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Department
+                {/* Skills */}
+                <div className="space-y-3" ref={skillsRef}>
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                    Professional Skills
                   </Label>
-                  <Select
-                    name="department"
-                    value={form.department}
-                    onChange={handleChange}
-                    icon={HiOfficeBuilding}
-                    required
-                    theme={{
-                      field: {
-                        select: {
-                          base: "block w-full border-none",
-                          colors: {
-                            gray: "bg-slate-50 text-slate-700 font-bold text-sm rounded-xl focus:ring-2 focus:ring-blue-100",
-                          },
-                          withIcon: {
-                            on: "pl-11",
-                          },
-                        },
-                        icon: {
-                          base: "absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none",
-                          svg: "h-5 w-5 text-slate-300 transition-colors group-focus-within:text-blue-500", // Icon එකේ size එක සහ color එක මෙතනින් පාලනය වේ
-                        },
-                      },
-                    }}
-                  >
-                    <option value="Computing">Computing</option>
-                    <option value="Business Management">
-                      Business Management
-                    </option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Accounting">Accounting</option>
-                  </Select>
-                </div>
 
-                {/* Degree Type Select */}
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Degree Type
-                  </Label>
-                  <Select
-                    name="degreeType"
-                    value={form.degreeType}
-                    onChange={handleChange}
-                    icon={HiAcademicCap}
-                    required
-                    theme={{
-                      field: {
-                        select: {
-                          base: "block w-full border-none",
-                          colors: {
-                            gray: "bg-slate-50 text-slate-700 font-bold text-sm rounded-xl focus:ring-2 focus:ring-blue-100",
-                          },
-                          withIcon: {
-                            on: "pl-11",
-                          },
-                        },
-                        icon: {
-                          base: "absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none",
-                          svg: "h-5 w-5 text-slate-300",
-                        },
-                      },
-                    }}
-                  >
-                    <option value="UNDERGRADUATE">Undergraduate</option>
-                    <option value="GRADUATE">Graduate</option>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="space-y-1 mb-6">
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Residential Address
-                </Label>
-                <div className="relative">
-                  <HiLocationMarker
-                    className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${errors.address ? "text-red-400" : "text-slate-300"}`}
-                  />
-                  <input
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-3 border-none rounded-xl text-sm font-bold text-slate-700 focus:ring-2 transition-all ${errors.address ? "bg-red-50 ring-2 ring-red-500" : "bg-slate-50 focus:ring-blue-100"}`}
-                    placeholder="Enter your address"
-                  />
-                </div>
-              </div>
-
-              {/* Skills and CV Section remains same */}
-
-              <div className="space-y-3" ref={skillsRef}>
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  Professional Skills
-                </Label>
-
-                {/* Selected Skill Tags */}
-                {selectedSkills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-1">
-                    {selectedSkills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm"
-                      >
-                        {skill}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedSkills(
-                              selectedSkills.filter((s) => s !== skill),
-                            )
-                          }
-                          className="text-slate-400 hover:text-red-500 ml-0.5"
+                  {selectedSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-1">
+                      {selectedSkills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="bg-sky-50 border border-sky-200 text-sky-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm uppercase"
                         >
-                          <HiX size={13} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Custom Dropdown Trigger */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setSkillsOpen((prev) => !prev)}
-                    className={`w-full flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                      skillsOpen ? "ring-2 ring-blue-100" : ""
-                    }`}
-                  >
-                    <span
-                      className={
-                        selectedSkills.length === 0
-                          ? "text-slate-400 font-semibold"
-                          : "text-slate-700"
-                      }
-                    >
-                      {selectedSkills.length === 0
-                        ? "Select Skills"
-                        : `${selectedSkills.length} skill${selectedSkills.length > 1 ? "s" : ""} selected`}
-                    </span>
-                    <svg
-                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${skillsOpen ? "rotate-180" : ""}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Panel */}
-                  {skillsOpen && (
-                    <div className="absolute z-50 mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
-                      <div className="max-h-48 overflow-y-auto py-1">
-                        {allSkills.map((skill) => {
-                          const isSelected = selectedSkills.includes(skill);
-                          return (
-                            <button
-                              key={skill}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSkills(
-                                  isSelected
-                                    ? selectedSkills.filter((s) => s !== skill)
-                                    : [...selectedSkills, skill],
-                                );
-                              }}
-                              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors text-left ${
-                                isSelected
-                                  ? "bg-blue-50 text-blue-700"
-                                  : "text-slate-600 hover:bg-slate-50"
-                              }`}
-                            >
-                              <span>{skill}</span>
-                              {isSelected && (
-                                <svg
-                                  className="w-4 h-4 text-blue-500 shrink-0"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2.5}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedSkills(
+                                selectedSkills.filter((s) => s !== skill),
+                              )
+                            }
+                            className="text-sky-500 hover:text-red-500 ml-0.5 transition-colors"
+                          >
+                            <HiX size={13} />
+                          </button>
+                        </span>
+                      ))}
                     </div>
                   )}
-                </div>
-              </div>
 
-              <div className="mt-10 p-6 bg-blue-50/50 rounded-[1.5rem] border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white p-3 rounded-xl shadow-sm text-blue-600">
-                    <HiDownload size={24} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-blue-400 tracking-widest">
-                      Resume / CV
-                    </p>
-                    <p className="text-sm font-bold text-slate-700 truncate max-w-[150px]">
-                      {form.cvFile
-                        ? form.cvFile.name
-                        : existingResumePath
-                          ? existingResumePath.split("/").pop()
-                          : "No CV uploaded"}
-                    </p>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setSkillsOpen((prev) => !prev)}
+                      className={`w-full flex items-center justify-between px-4 py-3 bg-sky-50/50 rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-sky-200 ${
+                        skillsOpen ? "ring-2 ring-sky-200" : ""
+                      }`}
+                    >
+                      <span
+                        className={
+                          selectedSkills.length === 0
+                            ? "text-gray-400 font-semibold"
+                            : "text-gray-700"
+                        }
+                      >
+                        {selectedSkills.length === 0
+                          ? "Select Skills"
+                          : `${selectedSkills.length} skill${selectedSkills.length > 1 ? "s" : ""} selected`}
+                      </span>
+                      <svg
+                        className={`w-4 h-4 text-sky-400 transition-transform duration-200 ${skillsOpen ? "rotate-180" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {skillsOpen && (
+                      <div className="absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden">
+                        <div className="max-h-48 overflow-y-auto py-1">
+                          {allSkills.map((skill) => {
+                            const isSelected = selectedSkills.includes(skill);
+                            return (
+                              <button
+                                key={skill}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSkills(
+                                    isSelected
+                                      ? selectedSkills.filter((s) => s !== skill)
+                                      : [...selectedSkills, skill],
+                                  );
+                                }}
+                                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold transition-colors text-left ${
+                                  isSelected
+                                    ? "bg-sky-50 text-sky-700"
+                                    : "text-gray-600 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span>{skill}</span>
+                                {isSelected && (
+                                  <svg
+                                    className="w-4 h-4 text-sky-500 shrink-0"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept=".pdf"
-                  />
-                  <Button
-                    size="sm"
-                    color="light"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-xl font-bold flex-1 md:flex-none"
-                  >
-                    Replace
-                  </Button>
-                  <Button
-                    onClick={handleDownload}
-                    size="sm"
-                    className="rounded-xl font-bold bg-blue-600 flex-1 md:flex-none transition-all active:scale-95 shadow-md"
-                  >
-                    Download
-                  </Button>
+
+                {/* CV / Resume Section */}
+                <div className="mt-10 p-6 bg-sky-50/60 rounded-2xl border border-sky-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    {/* Icon box — mirrors the Jobs card icon style */}
+                    <div className="p-3 bg-sky-100 rounded-xl text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
+                      <HiDownload size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase text-sky-500 tracking-widest">
+                        Resume / CV
+                      </p>
+                      <p className="text-sm font-bold text-gray-700 truncate max-w-[150px]">
+                        {form.cvFile
+                          ? form.cvFile.name
+                          : existingResumePath
+                            ? existingResumePath.split("/").pop()
+                            : "No CV uploaded"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept=".pdf"
+                    />
+                    {/* Replace button — grey/dark like Jobs "Apply Now" default */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 md:flex-none rounded-lg bg-gray-700 px-6 py-2.5 text-xs font-bold text-white hover:bg-gray-800 transition-all shadow-sm uppercase tracking-wider"
+                    >
+                      Replace
+                    </button>
+                    {/* Download button — lime like Jobs search button */}
+                    <button
+                      onClick={handleDownload}
+                      className="flex-1 md:flex-none rounded-lg bg-sky-600 px-6 py-2.5 text-xs font-extrabold text-white hover:bg-sky-700 transition-all shadow-lg uppercase tracking-wider"
+                    >
+                      Download
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Card>
+
+              </Card>
+            </motion.div>
           </div>
         </div>
       </div>

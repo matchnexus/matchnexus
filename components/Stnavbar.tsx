@@ -18,14 +18,15 @@ export default function CompanyNavbar() {
   const tabs = [
     { name: "jobs", href: "/auth/student/jobs" },
     { name: "Profile", href: "/auth/student/user" },
-    { name: "suggesion", href: "/" },
-    { name: "courses", href: "/" },
+    { name: "suggesion", href: "#" },
+    { name: "courses", href: "#" },
+      { name: "applications", href: "/auth/student/applications" }
   ];
 
   const baseLink =
     "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition";
   const normalLink = "text-gray-700 hover:bg-gray-100 hover:text-gray-900";
-  const activeLink = "bg-blue-600 text-white shadow-sm";
+  const activeLink = "bg-sky-700 text-white shadow-sm";
 
   const isActive = (href: string) => {
     if (href === "/company/dashboard") return pathname === "/company/dashboard";
