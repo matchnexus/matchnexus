@@ -1,6 +1,8 @@
 "use client";
 
+import { Alert, Badge, Card, Spinner } from "flowbite-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -32,13 +34,18 @@ export default function CompanyDashboardPage() {
   const [companyId, setCompanyId] = useState("");
   const [posts, setPosts] = useState<DashboardPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  const companyPhotos = [
+    "/photos/image1.jpg",
+    "/photos/image2.jpg",
+    "/photos/image3.jpg",
+    "/photos/image4.jpg",
+  ];
 
   useEffect(() => {
-    const storedName = localStorage.getItem("companyName") || "";
-    const storedCompanyId = localStorage.getItem("companyId") || "";
-
-    setCompanyName(storedName);
-    setCompanyId(storedCompanyId);
+    setCompanyName(localStorage.getItem("companyName") || "");
+    setCompanyId(localStorage.getItem("companyId") || "");
   }, []);
 
   useEffect(() => {
@@ -50,12 +57,7 @@ export default function CompanyDashboardPage() {
         const res = await fetch(`/api/company/posts?companyId=${companyId}`);
         const data = await res.json();
 
-        if (!res.ok) {
-          setPosts([]);
-          return;
-        }
-
-        setPosts((data.posts || []) as DashboardPost[]);
+        setPosts(res.ok ? data.posts || [] : []);
       } catch {
         setPosts([]);
       } finally {
@@ -66,241 +68,176 @@ export default function CompanyDashboardPage() {
     fetchPosts();
   }, [companyId]);
 
+  // Auto-rotate photos every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPhotoIndex((prev) => (prev + 1) % companyPhotos.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [companyPhotos.length]);
+
   const heading = companyName ? `Welcome, ${companyName}` : "Welcome";
-  const activePosts = posts.filter((post) => post.status === "ACTIVE");
+
+  const activePosts = posts.filter((p) => p.status === "ACTIVE");
   const totalPosts = posts.length;
   const totalApplications = posts.reduce(
-    (total, post) => total + (post.applicationsCount || 0),
+    (t, p) => t + (p.applicationsCount || 0),
     0
   );
-  const averageApplicationsPerPost =
-    totalPosts > 0 ? (totalApplications / totalPosts).toFixed(1) : "0.0";
-
-  const statCards = [
-    {
-      title: "Total Posts",
-      value: loadingPosts ? "..." : String(totalPosts),
-      subtitle: "All internship posts created by your company.",
-      cardClass: "border-rose-300 bg-rose-50",
-      glowClass: "from-rose-300/45 via-rose-200/25 to-transparent",
-    },
-    {
-      title: "Total Applications",
-      value: loadingPosts ? "..." : String(totalApplications),
-      subtitle: `Avg. ${
-        loadingPosts ? "..." : averageApplicationsPerPost
-      } applications per post.`,
-      cardClass: "border-blue-300 bg-blue-50",
-      glowClass: "from-blue-300/45 via-sky-200/25 to-transparent",
-    },
-    {
-      title: "Active Posts",
-      value: loadingPosts ? "..." : String(activePosts.length),
-      subtitle: "Currently visible posts open for candidates.",
-      cardClass: "border-emerald-300 bg-emerald-50",
-      glowClass: "from-emerald-300/45 via-emerald-200/25 to-transparent",
-    },
-  ];
 
   return (
-    <section className="space-y-8 px-2 md:px-4">
-      <div className="overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-md transition hover:shadow-lg">
-        <div className="relative h-56 w-full md:h-72">
-          <Image
-            src="/photos/cccc.jpg"
-            alt="Office background"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-blue-900/65 to-transparent" />
-
-          <div className="absolute inset-0 flex flex-col justify-end p-6 text-white md:p-8">
-            <h1 className="text-2xl font-extrabold md:text-4xl">{heading}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-blue-100 md:text-base">
-              Manage company profile, publish internship opportunities, and
-              track your hiring pipeline from one place.
+    <section className="min-h-screen space-y-6 bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100 p-4 md:p-6">
+      <Card className="border-0 shadow-xl">
+        <div className="grid items-center gap-8 md:grid-cols-2">
+          {/* Left Side - Content */}
+          <div className="flex flex-col justify-center space-y-4 px-2 md:px-6">
+            <h1 className="text-4xl font-extrabold leading-tight text-slate-900 md:text-5xl">
+              Welcome,{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-600">
+                {companyName || "Company"}
+              </span>
+            </h1>
+            
+            <p className="max-w-xl text-sm leading-relaxed text-slate-600 md:text-base">
+              Manage internship posts, track applications, and monitor your hiring performance in one place. Connect with top talent and build your dream team.
             </p>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link
+                href="/company/posts/new"
+                className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700 active:scale-95"
+              >
+                Create Post
+              </Link>
+              <Link
+                href="/company/posts"
+                className="rounded-xl border-2 border-blue-600 px-6 py-3 text-sm font-bold text-blue-600 transition hover:bg-blue-50"
+              >
+                View Posts
+              </Link>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {statCards.map((card) => (
-          <div
-            key={card.title}
-            className={`relative overflow-hidden rounded-2xl border p-6 shadow-md transition duration-200 hover:-translate-y-1 hover:shadow-xl ${card.cardClass}`}
-          >
-            <div
-              className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${card.glowClass}`}
-            />
+          {/* Right Side - Photo Carousel with Organic Shape */}
+          <div className="relative flex items-center justify-center py-6 md:py-10">
+            <div className="relative h-80 w-full max-w-sm">
+              {/* Organic blob background */}
+              <div className="absolute inset-0 rounded-full shadow-2xl" style={{
+                background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(200,220,255,0.7))",
+                filter: "blur(0.5px)",
+                transform: "scaleX(1.1)",
+              }} />
+              
+              {/* Photo container with carousel */}
+              <div className="relative h-full w-full overflow-hidden rounded-full shadow-xl">
+                <Image
+                  src={companyPhotos[currentPhotoIndex]}
+                  alt={`Company showcase ${currentPhotoIndex + 1}`}
+                  fill
+                  className="object-cover transition-opacity duration-500"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+              </div>
 
-            <div className="relative flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
-                  {card.title}
-                </p>
-                <p className="mt-3 text-4xl font-extrabold leading-none text-slate-900">
-                  {card.value}
-                </p>
+              {/* Carousel indicators */}
+              <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+                {companyPhotos.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentPhotoIndex(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      index === currentPhotoIndex
+                        ? "w-6 bg-white"
+                        : "w-2 bg-white/50 hover:bg-white/75"
+                    }`}
+                    aria-label={`Go to photo ${index + 1}`}
+                  />
+                ))}
               </div>
             </div>
-
-            <p className="relative mt-4 text-sm text-slate-600">
-              {card.subtitle}
-            </p>
           </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[
+          { title: "Total Posts", value: totalPosts, badge: "info" as const },
+          { title: "Applications", value: totalApplications, badge: "success" as const },
+          { title: "Active Posts", value: activePosts.length, badge: "failure" as const },
+        ].map((item) => (
+          <Card key={item.title} className="border-0 bg-white/80 shadow-md backdrop-blur">
+            <div className="flex items-start justify-between">
+              <p className="text-sm font-semibold text-slate-600">{item.title}</p>
+              <Badge color={item.badge}>{item.title}</Badge>
+            </div>
+            <h2 className="mt-2 text-4xl font-black text-slate-800">{item.value}</h2>
+          </Card>
         ))}
       </div>
 
-      <div className="rounded-3xl border border-blue-200 bg-white p-6 shadow-md md:p-8">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold text-slate-900">Published Posts</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            View active internship posts and their important details.
-          </p>
+      <Card className="border-0 bg-white/85 shadow-lg backdrop-blur">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-slate-800">Published Posts</h2>
+          <Badge color="indigo">{activePosts.length} Active</Badge>
         </div>
 
         {publishedPostId && (
-          <p className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-800">
+          <Alert color="success" className="mb-4">
             Post published successfully.
-          </p>
+          </Alert>
         )}
 
         {loadingPosts && (
-          <p className="text-sm text-gray-500">Loading published posts...</p>
+          <div className="flex items-center justify-center gap-3 py-10 text-slate-600">
+            <Spinner size="md" />
+            <span>Loading posts...</span>
+          </div>
         )}
 
         {!loadingPosts && activePosts.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
-            <p className="text-sm text-gray-600">
-              No published posts yet. Publish posts from the posts page to see
-              them here.
-            </p>
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 py-10 text-center text-slate-500">
+            No active posts yet.
           </div>
         )}
 
-        {!loadingPosts && activePosts.length > 0 && (
-          <div className="space-y-4">
-            {activePosts.map((post) => (
-              <div
-                key={post.id}
-                className={`rounded-2xl border p-5 shadow-md transition hover:border-blue-300 hover:shadow-xl ${
-                  post.id === publishedPostId
-                    ? "border-amber-300 bg-amber-50 ring-2 ring-amber-200"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-lg font-bold text-slate-900">
-                      {post.title}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Deadline:{" "}
-                      {new Date(post.applicationDeadline).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3 text-sm text-gray-700 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-xl bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-900">Location</p>
-                    <p className="mt-1">{post.location || "Not specified"}</p>
-                  </div>
-
-                  <div className="rounded-xl bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-900">Work Type</p>
-                    <p className="mt-1">{post.workType || "Not specified"}</p>
-                  </div>
-
-                  <div className="rounded-xl bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-900">Duration</p>
-                    <p className="mt-1">
-                      {post.durationMonths
-                        ? `${post.durationMonths} months`
-                        : "Not specified"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-gray-50 p-3">
-                    <p className="font-semibold text-gray-900">Stipend</p>
-                    <p className="mt-1">
-                      {post.stipendAmount ?? "Not specified"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-sm font-semibold text-gray-900">
-                    Description
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-gray-700">
-                    {post.description || "No description provided."}
-                  </p>
-                </div>
-
-                {post.responsibilities && (
-                  <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Responsibilities
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-gray-700">
-                      {post.responsibilities}
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Required Skills
-                    </p>
-                    <div className="mt-3 flex min-h-8 flex-wrap gap-2">
-                      {post.requiredSkills.length > 0 ? (
-                        post.requiredSkills.map((skill) => (
-                          <span
-                            key={skill.id}
-                            className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700"
-                          >
-                            {skill.skillName}
-                          </span>
-                        ))
-                      ) : (
-                        <p className="text-xs text-gray-500">
-                          No required skills
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Optional Skills
-                    </p>
-                    <div className="mt-3 flex min-h-8 flex-wrap gap-2">
-                      {post.optionalSkills.length > 0 ? (
-                        post.optionalSkills.map((skill) => (
-                          <span
-                            key={skill.id}
-                            className="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700"
-                          >
-                            {skill.skillName}
-                          </span>
-                        ))
-                      ) : (
-                        <p className="text-xs text-gray-500">
-                          No optional skills
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+        <div className="space-y-4">
+          {activePosts.map((post) => (
+            <Card key={post.id} className="border border-slate-100 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-xl font-bold text-slate-800">{post.title}</h3>
+                <Badge color="blue">{post.applicationsCount || 0} Applications</Badge>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Deadline: {new Date(post.applicationDeadline).toLocaleDateString()}
+              </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                <div className="rounded-lg bg-slate-50 p-3">Location: {post.location || "N/A"}</div>
+                <div className="rounded-lg bg-slate-50 p-3">Work Type: {post.workType || "N/A"}</div>
+                <div className="rounded-lg bg-slate-50 p-3">Duration: {post.durationMonths || "N/A"} months</div>
+                <div className="rounded-lg bg-slate-50 p-3">Stipend: {post.stipendAmount || "N/A"}</div>
+              </div>
+
+              <p className="mt-4 text-sm leading-relaxed text-slate-700">{post.description || "No description"}</p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {post.requiredSkills.map((s) => (
+                  <Badge key={s.id} color="info">
+                    {s.skillName}
+                  </Badge>
+                ))}
+                {post.optionalSkills.map((s) => (
+                  <Badge key={s.id} color="purple">
+                    {s.skillName}
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Card>
     </section>
   );
 }
