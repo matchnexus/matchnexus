@@ -11,6 +11,8 @@ export async function POST(req: Request) {
       companyId,
       title,
       description,
+      qualifications,
+      experience,
       responsibilities,
       location,
       workType,
@@ -59,11 +61,19 @@ export async function POST(req: Request) {
       );
     }
 
+    const descriptionSections = [description?.trim() || ""];
+    if (typeof qualifications === "string" && qualifications.trim()) {
+      descriptionSections.push(`Qualifications:\n${qualifications.trim()}`);
+    }
+    if (typeof experience === "string" && experience.trim()) {
+      descriptionSections.push(`Experience:\n${experience.trim()}`);
+    }
+
     const post = await prisma.internshipPost.create({
       data: {
         companyId,
         title,
-        description,
+        description: descriptionSections.filter(Boolean).join("\n\n"),
         responsibilities,
         location,
         workType,

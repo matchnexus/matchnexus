@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type CompanyProfileForm = {
+  logoUrl: string;
   websiteUrl: string;
   industry: string;
   companySize: string;
@@ -16,6 +17,7 @@ type CompanyProfileForm = {
 };
 
 const EMPTY_PROFILE_FORM: CompanyProfileForm = {
+  logoUrl: "",
   websiteUrl: "",
   industry: "",
   companySize: "",
@@ -52,12 +54,22 @@ export default function CompanyProfilePage() {
   const [companyEmail, setCompanyEmail] = useState("");
 
   const [formData, setFormData] = useState<CompanyProfileForm>(EMPTY_PROFILE_FORM);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(true);
   const [savedProfile, setSavedProfile] = useState<CompanyProfileForm | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoPreviewUrl]);
 
   useEffect(() => {
     const storedCompanyId = localStorage.getItem("companyId") || "";
@@ -79,6 +91,9 @@ export default function CompanyProfilePage() {
           setFormData(cachedProfile);
           setSavedProfile(cachedProfile);
           setIsEditMode(false);
+          if (cachedProfile.logoUrl) {
+            localStorage.setItem("companyLogoUrl", cachedProfile.logoUrl);
+          }
         }
       } catch {
         localStorage.removeItem(initialCacheKey);
@@ -116,6 +131,7 @@ export default function CompanyProfilePage() {
 
         if (data.profile) {
           const profileFromApi = {
+            logoUrl: data.profile.logoUrl || "",
             websiteUrl: data.profile.websiteUrl || "",
             industry: data.profile.industry || "",
             companySize: data.profile.companySize || "",
@@ -138,6 +154,10 @@ export default function CompanyProfilePage() {
               data.company?.corporateEmail || storedCompanyEmail
             );
             localStorage.setItem(freshCacheKey, JSON.stringify(profileFromApi));
+          }
+
+          if (profileFromApi.logoUrl) {
+            localStorage.setItem("companyLogoUrl", profileFromApi.logoUrl);
           }
         }
       } catch (error) {
@@ -257,6 +277,28 @@ export default function CompanyProfilePage() {
       setLoading(true);
       setIsError(false);
 
+      let nextLogoUrl = formData.logoUrl;
+
+      if (logoFile) {
+        const logoPayload = new FormData();
+        logoPayload.append("companyId", companyId);
+        logoPayload.append("logo", logoFile);
+
+        const logoRes = await fetch("/api/company/profile/logo", {
+          method: "POST",
+          body: logoPayload,
+        });
+        const logoData = await logoRes.json();
+
+        if (!logoRes.ok) {
+          setIsError(true);
+          setMessage(logoData.error || "Failed to upload company logo");
+          return;
+        }
+
+        nextLogoUrl = logoData.logoUrl || "";
+      }
+
       const res = await fetch("/api/company/profile", {
         method: "POST",
         headers: {
@@ -264,6 +306,7 @@ export default function CompanyProfilePage() {
         },
         body: JSON.stringify({
           companyId,
+          logoUrl: nextLogoUrl,
           websiteUrl: formData.websiteUrl,
           industry: formData.industry,
           companySize: normalizedCompanySize,
@@ -288,16 +331,28 @@ export default function CompanyProfilePage() {
       setIsError(false);
       const normalizedFormData = {
         ...formData,
+        logoUrl: nextLogoUrl,
         companySize: normalizedCompanySize,
         foundedYear: foundedYearRaw,
       };
       setFormData(normalizedFormData);
       setSavedProfile(normalizedFormData);
+      setLogoFile(null);
+      if (logoPreviewUrl) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+      setLogoPreviewUrl("");
       setIsEditMode(false);
       localStorage.setItem(
         buildProfileCacheKey(companyId, companyEmail),
         JSON.stringify(normalizedFormData)
       );
+      if (nextLogoUrl) {
+        localStorage.setItem("companyLogoUrl", nextLogoUrl);
+      } else {
+        localStorage.removeItem("companyLogoUrl");
+      }
+      window.dispatchEvent(new Event("company-profile-updated"));
       setMessage(data.message || "Profile saved successfully");
     } catch (error) {
       setIsError(true);
@@ -312,7 +367,37 @@ export default function CompanyProfilePage() {
     return trimmed.length > 0 ? trimmed : "Not provided";
   };
 
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      setIsError(true);
+      setMessage("Please select an image file for the logo");
+      return;
+    }
+
+    if (selectedFile.size > 3 * 1024 * 1024) {
+      setIsError(true);
+      setMessage("Logo size must be 3MB or less");
+      return;
+    }
+
+    if (logoPreviewUrl) {
+      URL.revokeObjectURL(logoPreviewUrl);
+    }
+
+    const preview = URL.createObjectURL(selectedFile);
+    setLogoFile(selectedFile);
+    setLogoPreviewUrl(preview);
+    setIsError(false);
+    setMessage("");
+  };
+
   const profileToShow = savedProfile || formData;
+  const effectiveLogoPreview = logoPreviewUrl || formData.logoUrl || profileToShow.logoUrl;
 
   return (
     <div className="space-y-6">
@@ -327,6 +412,34 @@ export default function CompanyProfilePage() {
         <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
           {isEditMode ? (
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-indigo-700">Company Logo</label>
+                <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-slate-50/80 p-3">
+                  <div className="h-16 w-16 overflow-hidden rounded-full border border-gray-200 bg-white">
+                    {effectiveLogoPreview ? (
+                      <img
+                        src={effectiveLogoPreview}
+                        alt="Company logo preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-500">
+                        LOGO
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileChange}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">PNG, JPG, JPEG, WEBP up to 3MB</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="mb-1 block text-sm font-semibold text-indigo-700">Company Name</label>
                 <input
@@ -506,6 +619,23 @@ export default function CompanyProfilePage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3 md:col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company Logo</p>
+                  <div className="mt-2 h-16 w-16 overflow-hidden rounded-full border border-gray-200 bg-white">
+                    {profileToShow.logoUrl ? (
+                      <img
+                        src={profileToShow.logoUrl}
+                        alt="Company logo"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-500">
+                        LOGO
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="rounded-lg border border-gray-200 bg-slate-50/80 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company Name</p>
                   <p className="mt-1 text-sm text-gray-800">{displayValue(companyName)}</p>

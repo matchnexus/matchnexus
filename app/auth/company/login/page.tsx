@@ -1,14 +1,14 @@
 "use client";
 
-import { Card, Label, TextInput, Button, Checkbox } from "flowbite-react";
+import { Card, Label, TextInput, Button } from "flowbite-react";
 import Link from "next/link";
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { strongPasswordMessage, validateStrongPassword } from "@/lib/password-policy";
 
 type LoginFormData = {
   email: string;
   password: string;
-  remember: boolean;
 };
 
 type FormErrors = {
@@ -19,10 +19,10 @@ type FormErrors = {
 
 export default function CompanyLoginPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState<LoginFormData>({
     email: "",
     password: "",
-    remember: false,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -58,10 +58,9 @@ export default function CompanyLoginPage() {
       }
     }
 
-    if (!form.password) {
-      nextErrors.password = "Password is required";
-    } else if (form.password.length < 8) {
-      nextErrors.password = "Min 8 characters required";
+    const passwordError = validateStrongPassword(form.password);
+    if (passwordError) {
+      nextErrors.password = passwordError;
     }
 
     return nextErrors;
@@ -116,7 +115,6 @@ export default function CompanyLoginPage() {
       setForm({
         email: "",
         password: "",
-        remember: false,
       });
 
       setTimeout(() => {
@@ -161,45 +159,55 @@ export default function CompanyLoginPage() {
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="password" value="Password" className="font-semibold" />
-              <TextInput
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={handleChange}
-                minLength={8}
-                color={errors.password ? "failure" : "gray"}
-                sizing="lg"
-              />
+              <div className="relative">
+                <TextInput
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange}
+                  minLength={8}
+                  maxLength={8}
+                  color={errors.password ? "failure" : "gray"}
+                  sizing="lg"
+                  className="[&>input]:pr-10"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 3l18 18" />
+                      <path d="M10.6 10.6a2 2 0 102.8 2.8" />
+                      <path d="M9.9 5.1A10.7 10.7 0 0112 5c5.5 0 9.5 5.2 10 7-.2.7-1 2.2-2.3 3.6" />
+                      <path d="M6.6 6.7C4.2 8.3 2.5 10.7 2 12c.5 1.7 4.5 7 10 7 1.8 0 3.4-.5 4.8-1.2" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <p className="text-xs font-medium text-slate-500">{strongPasswordMessage}</p>
               {errors.password && (
                 <p className="rounded-lg border border-red-100 bg-red-50 p-2 text-xs font-bold text-red-600">
                   {errors.password}
                 </p>
               )}
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="remember"
-                  name="remember"
-                  checked={form.remember}
-                  onChange={handleChange}
-                />
-                <Label
-                  htmlFor="remember"
-                  className="cursor-pointer font-medium text-slate-600"
+              <div className="flex justify-end">
+                <Link
+                  href="/auth/company/forgot-password"
+                  className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline"
                 >
-                  Remember me
-                </Label>
+                  Forgot password?
+                </Link>
               </div>
-              <Link
-                href="/auth/company/register"
-                className="font-bold text-sky-600 hover:text-sky-700"
-              >
-                Need account?
-              </Link>
             </div>
 
             <Button

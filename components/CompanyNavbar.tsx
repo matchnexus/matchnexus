@@ -8,9 +8,30 @@ export default function CompanyNavbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [companyLogoUrl, setCompanyLogoUrl] = useState("");
+
+  const syncCompanyIdentity = () => {
+    setCompanyName(localStorage.getItem("companyName") || "");
+    setCompanyLogoUrl(localStorage.getItem("companyLogoUrl") || "");
+  };
 
   useEffect(() => {
-    setCompanyName(localStorage.getItem("companyName") || "");
+    syncCompanyIdentity();
+
+    const onProfileUpdated = () => syncCompanyIdentity();
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key === "companyName" || event.key === "companyLogoUrl") {
+        syncCompanyIdentity();
+      }
+    };
+
+    window.addEventListener("company-profile-updated", onProfileUpdated);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("company-profile-updated", onProfileUpdated);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const tabs = [
@@ -18,7 +39,8 @@ export default function CompanyNavbar() {
     { name: "Applications", href: "/company/applications" },
     { name: "Analytics", href: "/company/analytics" },
     { name: "Posts", href: "/company/posts" },
-    { name: "Profile", href: "/company/profile" },
+    { name: "Settings", href: "/company/profile" },
+    { name: "Contact Us", href: "/company/contactus" },
   ];
 
   const isActive = (href: string) => {
@@ -37,8 +59,16 @@ export default function CompanyNavbar() {
 
         {/* LEFT - LOGO */}
         <Link href="/company/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
-            M
+          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+            {companyLogoUrl ? (
+              <img
+                src={companyLogoUrl}
+                alt="Company logo"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              "M"
+            )}
           </div>
           <h1 className="hidden text-lg font-bold text-slate-800 md:block">
             {displayTitle}
@@ -75,7 +105,10 @@ export default function CompanyNavbar() {
         <div className="flex items-center gap-3 md:gap-4">
           <Link
             href="/auth/company/login"
-            onClick={() => localStorage.removeItem("companyName")}
+            onClick={() => {
+              localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
+            }}
             className="hidden md:inline-flex items-center rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
           >
             Logout
@@ -83,7 +116,10 @@ export default function CompanyNavbar() {
 
           <Link
             href="/auth/company/login"
-            onClick={() => localStorage.removeItem("companyName")}
+            onClick={() => {
+              localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
+            }}
             className="md:hidden p-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
             title="Logout"
           >
@@ -113,6 +149,7 @@ export default function CompanyNavbar() {
             href="/auth/company/login"
             onClick={() => {
               localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
               setOpen(false);
             }}
             className="block w-full px-4 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition text-center"

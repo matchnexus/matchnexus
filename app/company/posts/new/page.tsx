@@ -21,6 +21,8 @@ export default function CreatePostPage() {
     title: "",
     description: "",
     responsibilities: "",
+    qualifications: "",
+    experience: "",
     location: "",
     workType: "",
     stipendAmount: "",
@@ -40,16 +42,6 @@ export default function CreatePostPage() {
       ? Number(durationValue) * 12
       : Number(durationValue)
     : 0;
-
-  const canSubmit =
-    formData.title.trim() &&
-    formData.description.trim() &&
-    formData.responsibilities.trim() &&
-    formData.location.trim() &&
-    formData.workType &&
-    durationValue &&
-    formData.requiredSkills.trim() &&
-    formData.applicationDeadline;
 
   useEffect(() => {
     const storedCompanyId = localStorage.getItem("companyId") || "";
@@ -75,33 +67,9 @@ export default function CreatePostPage() {
       return;
     }
 
-    if (formData.applicationDeadline < todayDate) {
+    if (formData.applicationDeadline && formData.applicationDeadline < todayDate) {
       setIsError(true);
       setMessage("Application deadline cannot be in the past.");
-      return;
-    }
-
-    if (!formData.title.trim() || !formData.description.trim() || !formData.responsibilities.trim()) {
-      setIsError(true);
-      setMessage("Title, description, and responsibilities are required.");
-      return;
-    }
-
-    if (!formData.location.trim() || !formData.workType) {
-      setIsError(true);
-      setMessage("Location and work type are required.");
-      return;
-    }
-
-    if (!durationValue) {
-      setIsError(true);
-      setMessage("Please select the role duration.");
-      return;
-    }
-
-    if (!formData.requiredSkills.trim()) {
-      setIsError(true);
-      setMessage("Required skills are mandatory.");
       return;
     }
 
@@ -119,6 +87,8 @@ export default function CreatePostPage() {
           title: formData.title,
           description: formData.description,
           responsibilities: formData.responsibilities,
+          qualifications: formData.qualifications,
+          experience: formData.experience,
           location: formData.location,
           workType: formData.workType || null,
           durationMonths: totalDurationMonths > 0 ? totalDurationMonths : null,
@@ -146,6 +116,8 @@ export default function CreatePostPage() {
         title: "",
         description: "",
         responsibilities: "",
+        qualifications: "",
+        experience: "",
         location: "",
         workType: "",
         stipendAmount: "",
@@ -184,7 +156,6 @@ export default function CreatePostPage() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. Frontend Developer Intern"
-                  required
                 />
               </div>
 
@@ -197,7 +168,6 @@ export default function CreatePostPage() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Describe the internship role, team, and expected outcomes"
                   rows={4}
-                  required
                 />
               </div>
 
@@ -210,7 +180,30 @@ export default function CreatePostPage() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="List key tasks and responsibilities"
                   rows={3}
-                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Qualifications</label>
+                <textarea
+                  name="qualifications"
+                  value={formData.qualifications}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="e.g. Undergraduate in IT/CS or related field"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Experience</label>
+                <textarea
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="e.g. 0-1 years, internship/project experience"
+                  rows={2}
                 />
               </div>
             </section>
@@ -228,7 +221,6 @@ export default function CreatePostPage() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="e.g. Colombo"
-                    required
                   />
                 </div>
 
@@ -239,7 +231,6 @@ export default function CreatePostPage() {
                     value={formData.workType}
                     onChange={handleChange}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
                   >
                     <option value="">Select work type</option>
                     <option value="REMOTE">Remote</option>
@@ -267,7 +258,6 @@ export default function CreatePostPage() {
                       value={durationValue}
                       onChange={(e) => setDurationValue(e.target.value)}
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                      required
                     >
                       <option value="">Select value</option>
                       {(durationUnit === "YEARS"
@@ -308,7 +298,6 @@ export default function CreatePostPage() {
                     onChange={handleChange}
                     min={todayDate}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
                   />
                 </div>
               </div>
@@ -326,7 +315,6 @@ export default function CreatePostPage() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="React, TypeScript, Git"
-                  required
                 />
               </div>
 
@@ -351,6 +339,8 @@ export default function CreatePostPage() {
                     title: "",
                     description: "",
                     responsibilities: "",
+                    qualifications: "",
+                    experience: "",
                     location: "",
                     workType: "",
                     stipendAmount: "",
@@ -368,7 +358,7 @@ export default function CreatePostPage() {
 
               <button
                 type="submit"
-                disabled={loading || !canSubmit}
+                disabled={loading}
                 className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {loading ? "Creating..." : "Create Internship Post"}

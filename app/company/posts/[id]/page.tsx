@@ -3,6 +3,41 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const splitDescriptionSections = (rawDescription: string) => {
+  const description = rawDescription || "";
+  const qualificationsMarker = "\n\nQualifications:\n";
+  const experienceMarker = "\n\nExperience:\n";
+
+  const qualificationsIndex = description.indexOf(qualificationsMarker);
+  const experienceIndex = description.indexOf(experienceMarker);
+
+  let coreDescription = description;
+  let qualifications = "";
+  let experience = "";
+
+  if (qualificationsIndex >= 0) {
+    coreDescription = description.slice(0, qualificationsIndex);
+
+    if (experienceIndex > qualificationsIndex) {
+      qualifications = description
+        .slice(qualificationsIndex + qualificationsMarker.length, experienceIndex)
+        .trim();
+      experience = description.slice(experienceIndex + experienceMarker.length).trim();
+    } else {
+      qualifications = description.slice(qualificationsIndex + qualificationsMarker.length).trim();
+    }
+  } else if (experienceIndex >= 0) {
+    coreDescription = description.slice(0, experienceIndex);
+    experience = description.slice(experienceIndex + experienceMarker.length).trim();
+  }
+
+  return {
+    coreDescription: coreDescription.trim(),
+    qualifications,
+    experience,
+  };
+};
+
 export default function EditPostPage({
   params,
 }: {
@@ -15,6 +50,8 @@ export default function EditPostPage({
     title: "",
     description: "",
     responsibilities: "",
+    qualifications: "",
+    experience: "",
     location: "",
     workType: "",
     durationMonths: "",
@@ -49,10 +86,14 @@ export default function EditPostPage({
 
         const post = data.post;
 
+        const descriptionParts = splitDescriptionSections(post.description || "");
+
         setFormData({
           title: post.title || "",
-          description: post.description || "",
+          description: descriptionParts.coreDescription,
           responsibilities: post.responsibilities || "",
+          qualifications: descriptionParts.qualifications,
+          experience: descriptionParts.experience,
           location: post.location || "",
           workType: post.workType || "",
           durationMonths: post.durationMonths?.toString() || "",
@@ -104,6 +145,8 @@ export default function EditPostPage({
           title: formData.title,
           description: formData.description,
           responsibilities: formData.responsibilities,
+          qualifications: formData.qualifications,
+          experience: formData.experience,
           location: formData.location,
           workType: formData.workType || null,
           durationMonths: formData.durationMonths
@@ -188,6 +231,30 @@ export default function EditPostPage({
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="List key tasks and responsibilities"
                     rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Qualifications</label>
+                  <textarea
+                    name="qualifications"
+                    value={formData.qualifications}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="e.g. Undergraduate in IT/CS or related field"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Experience</label>
+                  <textarea
+                    name="experience"
+                    value={formData.experience}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="e.g. 0-1 years, internship/project experience"
+                    rows={2}
                   />
                 </div>
               </section>

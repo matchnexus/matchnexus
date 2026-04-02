@@ -65,6 +65,7 @@ export async function POST(req: Request) {
     const {
       companyId,
       corporateEmail,
+      logoUrl,
       websiteUrl,
       industry,
       companySize,
@@ -186,6 +187,7 @@ export async function POST(req: Request) {
       await prisma.companyProfile.update({
         where: { companyId },
         data: {
+          logoUrl,
           websiteUrl,
           industry,
           companySize: normalizedCompanySize,
@@ -208,6 +210,7 @@ export async function POST(req: Request) {
     await prisma.companyProfile.create({
       data: {
         companyId,
+        logoUrl,
         websiteUrl,
         industry,
         companySize: normalizedCompanySize,

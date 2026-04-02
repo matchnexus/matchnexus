@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { validateStrongPassword } from "@/lib/password-policy";
 
 const prisma = new PrismaClient();
 
@@ -18,11 +19,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (String(password).length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
+    const passwordError = validateStrongPassword(String(password));
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     const emailDomain = email.split("@")[1]?.toLowerCase();

@@ -25,6 +25,41 @@ type Post = {
   optionalSkills: Skill[];
 };
 
+const splitDescriptionSections = (rawDescription: string) => {
+  const description = rawDescription || "";
+  const qualificationsMarker = "\n\nQualifications:\n";
+  const experienceMarker = "\n\nExperience:\n";
+
+  const qualificationsIndex = description.indexOf(qualificationsMarker);
+  const experienceIndex = description.indexOf(experienceMarker);
+
+  let coreDescription = description;
+  let qualifications = "";
+  let experience = "";
+
+  if (qualificationsIndex >= 0) {
+    coreDescription = description.slice(0, qualificationsIndex);
+
+    if (experienceIndex > qualificationsIndex) {
+      qualifications = description
+        .slice(qualificationsIndex + qualificationsMarker.length, experienceIndex)
+        .trim();
+      experience = description.slice(experienceIndex + experienceMarker.length).trim();
+    } else {
+      qualifications = description.slice(qualificationsIndex + qualificationsMarker.length).trim();
+    }
+  } else if (experienceIndex >= 0) {
+    coreDescription = description.slice(0, experienceIndex);
+    experience = description.slice(experienceIndex + experienceMarker.length).trim();
+  }
+
+  return {
+    coreDescription: coreDescription.trim(),
+    qualifications,
+    experience,
+  };
+};
+
 export default function CompanyPostsPage() {
   const searchParams = useSearchParams();
   const updatedPostId = searchParams.get("updated") || "";
@@ -152,9 +187,14 @@ export default function CompanyPostsPage() {
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
+      const { coreDescription, qualifications, experience } = splitDescriptionSections(
+        post.description
+      );
       const matchesSearch =
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchTerm.toLowerCase());
+        coreDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        qualifications.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        experience.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "ALL" || post.status === statusFilter;
@@ -251,6 +291,9 @@ export default function CompanyPostsPage() {
         {!loading && filteredPosts.length > 0 && (
           <div className="space-y-4">
           {filteredPosts.map((post) => (
+            (() => {
+              const details = splitDescriptionSections(post.description);
+              return (
             <div
               key={post.id}
               className={`rounded-xl border-2 border-black p-6 shadow-sm transition ${
@@ -323,13 +366,33 @@ export default function CompanyPostsPage() {
 
               <div className="mt-4 rounded-lg bg-slate-50 p-4">
                 <h3 className="text-sm font-semibold text-gray-900">Description</h3>
-                <p className="mt-1 text-sm text-gray-700">{post.description}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                  {details.coreDescription || "Not specified"}
+                </p>
               </div>
 
               {post.responsibilities && (
                 <div className="mt-4 rounded-lg bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-gray-900">Responsibilities</h3>
                   <p className="mt-1 text-sm text-gray-700">{post.responsibilities}</p>
+                </div>
+              )}
+
+              {details.qualifications && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Qualifications</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                    {details.qualifications}
+                  </p>
+                </div>
+              )}
+
+              {details.experience && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Experience</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                    {details.experience}
+                  </p>
                 </div>
               )}
 
@@ -371,6 +434,8 @@ export default function CompanyPostsPage() {
                 </div>
               </div>
             </div>
+              );
+            })()
           ))}
           </div>
         )}
