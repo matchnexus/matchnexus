@@ -11,6 +11,21 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const parsePoints = (value: string) => {
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-*\u2022]\s*/, "").trim())
+    .filter(Boolean);
+
+  return lines.length > 0 ? lines : [""];
+};
+
+const serializePoints = (points: string[]) =>
+  points
+    .map((point) => point.trim())
+    .filter(Boolean)
+    .join("\n");
+
 const DURATION_YEAR_OPTIONS = Array.from({ length: 5 }, (_, index) => String(index + 1));
 const DURATION_MONTH_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index + 1));
 
@@ -19,17 +34,15 @@ export default function CreatePostPage() {
   const [companyId, setCompanyId] = useState("");
   const [formData, setFormData] = useState({
     title: "",
+    category: "",
     description: "",
-    responsibilities: "",
-    qualifications: "",
-    experience: "",
     location: "",
     workType: "",
-    stipendAmount: "",
     applicationDeadline: "",
-    requiredSkills: "",
-    optionalSkills: "",
   });
+  const [responsibilityPoints, setResponsibilityPoints] = useState<string[]>(parsePoints(""));
+  const [keyRequirementPoints, setKeyRequirementPoints] = useState<string[]>(parsePoints(""));
+  const [techStackPoints, setTechStackPoints] = useState<string[]>(parsePoints(""));
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -54,6 +67,31 @@ export default function CreatePostPage() {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    });
+  };
+
+  const handlePointChange = (
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    index: number,
+    value: string
+  ) => {
+    setter((prev) => prev.map((item, itemIndex) => (itemIndex === index ? value : item)));
+  };
+
+  const addPoint = (setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setter((prev) => [...prev, ""]);
+  };
+
+  const removePoint = (
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    index: number
+  ) => {
+    setter((prev) => {
+      if (prev.length === 1) {
+        return [""];
+      }
+
+      return prev.filter((_, itemIndex) => itemIndex !== index);
     });
   };
 
@@ -85,19 +123,15 @@ export default function CreatePostPage() {
         body: JSON.stringify({
           companyId,
           title: formData.title,
+          category: formData.category,
           description: formData.description,
-          responsibilities: formData.responsibilities,
-          qualifications: formData.qualifications,
-          experience: formData.experience,
+          keyRequirements: serializePoints(keyRequirementPoints),
+          techStack: serializePoints(techStackPoints),
+          responsibilities: serializePoints(responsibilityPoints),
           location: formData.location,
           workType: formData.workType || null,
           durationMonths: totalDurationMonths > 0 ? totalDurationMonths : null,
-          stipendAmount: formData.stipendAmount
-            ? Number(formData.stipendAmount)
-            : null,
           applicationDeadline: formData.applicationDeadline,
-          requiredSkills: formData.requiredSkills,
-          optionalSkills: formData.optionalSkills,
         }),
       });
 
@@ -114,17 +148,15 @@ export default function CreatePostPage() {
 
       setFormData({
         title: "",
+        category: "",
         description: "",
-        responsibilities: "",
-        qualifications: "",
-        experience: "",
         location: "",
         workType: "",
-        stipendAmount: "",
         applicationDeadline: "",
-        requiredSkills: "",
-        optionalSkills: "",
       });
+      setResponsibilityPoints(parsePoints(""));
+      setKeyRequirementPoints(parsePoints(""));
+      setTechStackPoints(parsePoints(""));
       setDurationUnit("MONTHS");
       setDurationValue("");
 
@@ -160,6 +192,21 @@ export default function CreatePostPage() {
               </div>
 
               <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Category</label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Select category</option>
+                  <option value="IT">IT</option>
+                  <option value="Business">Business</option>
+                  <option value="Engineering">Engineering</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Description</label>
                 <textarea
                   name="description"
@@ -173,39 +220,101 @@ export default function CreatePostPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Responsibilities</label>
-                <textarea
-                  name="responsibilities"
-                  value={formData.responsibilities}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="List key tasks and responsibilities"
-                  rows={3}
-                />
+                <div className="space-y-2">
+                  {responsibilityPoints.map((point, index) => (
+                    <div key={`responsibility-${index}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={point}
+                        onChange={(e) =>
+                          handlePointChange(setResponsibilityPoints, index, e.target.value)
+                        }
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder={`Responsibility ${index + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePoint(setResponsibilityPoints, index)}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addPoint(setResponsibilityPoints)}
+                    className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                  >
+                    + Add Responsibility
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Qualifications</label>
-                <textarea
-                  name="qualifications"
-                  value={formData.qualifications}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="e.g. Undergraduate in IT/CS or related field"
-                  rows={3}
-                />
+                <label className="text-sm font-semibold text-slate-700">Key Requirements</label>
+                <div className="space-y-2">
+                  {keyRequirementPoints.map((point, index) => (
+                    <div key={`requirement-${index}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={point}
+                        onChange={(e) =>
+                          handlePointChange(setKeyRequirementPoints, index, e.target.value)
+                        }
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder={`Requirement ${index + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePoint(setKeyRequirementPoints, index)}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addPoint(setKeyRequirementPoints)}
+                    className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                  >
+                    + Add Requirement
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Experience</label>
-                <textarea
-                  name="experience"
-                  value={formData.experience}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="e.g. 0-1 years, internship/project experience"
-                  rows={2}
-                />
+                <label className="text-sm font-semibold text-slate-700">Tech Stack</label>
+                <div className="space-y-2">
+                  {techStackPoints.map((point, index) => (
+                    <div key={`tech-${index}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={point}
+                        onChange={(e) => handlePointChange(setTechStackPoints, index, e.target.value)}
+                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder={`Tech ${index + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePoint(setTechStackPoints, index)}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addPoint(setTechStackPoints)}
+                    className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                  >
+                    + Add Tech
+                  </button>
+                </div>
               </div>
+
             </section>
 
             <section className="space-y-4">
@@ -276,19 +385,6 @@ export default function CreatePostPage() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Stipend</label>
-                  <input
-                    type="number"
-                    min={0}
-                    name="stipendAmount"
-                    value={formData.stipendAmount}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g. 50000"
-                  />
-                </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-semibold text-slate-700">Application Deadline</label>
                   <input
@@ -303,51 +399,21 @@ export default function CreatePostPage() {
               </div>
             </section>
 
-            <section className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Skills</h2>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Required Skills</label>
-                <input
-                  type="text"
-                  name="requiredSkills"
-                  value={formData.requiredSkills}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="React, TypeScript, Git"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Optional Skills</label>
-                <input
-                  type="text"
-                  name="optionalSkills"
-                  value={formData.optionalSkills}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="Next.js, Tailwind, Node.js"
-                />
-              </div>
-            </section>
-
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 md:flex-row md:justify-end">
               <button
                 type="button"
                 onClick={() => {
                   setFormData({
                     title: "",
+                    category: "",
                     description: "",
-                    responsibilities: "",
-                    qualifications: "",
-                    experience: "",
                     location: "",
                     workType: "",
-                    stipendAmount: "",
                     applicationDeadline: "",
-                    requiredSkills: "",
-                    optionalSkills: "",
                   });
+                  setResponsibilityPoints(parsePoints(""));
+                  setKeyRequirementPoints(parsePoints(""));
+                  setTechStackPoints(parsePoints(""));
                   setDurationUnit("MONTHS");
                   setDurationValue("");
                 }}
