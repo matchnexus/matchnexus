@@ -12,6 +12,29 @@ const toNullableString = (value: unknown) => {
   return trimmed ? trimmed : null;
 };
 
+const normalizeCategory = (value: unknown): "COMPUTING" | "BUSINESS" | "ENGINEERING" | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized === "IT" || normalized === "COMPUTING") {
+    return "COMPUTING";
+  }
+  if (normalized === "BUSINESS") {
+    return "BUSINESS";
+  }
+  if (normalized === "ENGINEERING") {
+    return "ENGINEERING";
+  }
+
+  return null;
+};
+
 const appendMetadataToDescription = (
   baseDescription: string,
   category: string | null,
@@ -108,7 +131,7 @@ export async function POST(req: Request) {
     }
 
     const normalizedDescription = description?.trim() || "";
-    const normalizedCategory = toNullableString(category);
+    const normalizedCategory = normalizeCategory(category);
     const normalizedKeyRequirements = toNullableString(keyRequirements);
     const normalizedTechStack = toNullableString(techStack);
 

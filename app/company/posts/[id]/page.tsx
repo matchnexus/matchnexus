@@ -3,21 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const parsePoints = (value: string) => {
-  const lines = value
-    .split(/\r?\n/)
-    .map((line) => line.replace(/^[-*\u2022]\s*/, "").trim())
-    .filter(Boolean);
-
-  return lines.length > 0 ? lines : [""];
-};
-
-const serializePoints = (points: string[]) =>
-  points
-    .map((point) => point.trim())
-    .filter(Boolean)
-    .join("\n");
-
 export default function EditPostPage({
   params,
 }: {
@@ -30,14 +15,14 @@ export default function EditPostPage({
     title: "",
     category: "",
     description: "",
+    responsibilities: "",
+    keyRequirements: "",
+    techStack: "",
     location: "",
     workType: "",
     durationMonths: "",
     applicationDeadline: "",
   });
-  const [responsibilityPoints, setResponsibilityPoints] = useState<string[]>(parsePoints(""));
-  const [keyRequirementPoints, setKeyRequirementPoints] = useState<string[]>(parsePoints(""));
-  const [techStackPoints, setTechStackPoints] = useState<string[]>(parsePoints(""));
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -68,6 +53,9 @@ export default function EditPostPage({
           title: post.title || "",
           category: post.category || "",
           description: post.description || "",
+          responsibilities: post.responsibilities || "",
+          keyRequirements: post.keyRequirements || "",
+          techStack: post.techStack || "",
           location: post.location || "",
           workType: post.workType || "",
           durationMonths: post.durationMonths?.toString() || "",
@@ -75,9 +63,6 @@ export default function EditPostPage({
             ? post.applicationDeadline.split("T")[0]
             : "",
         });
-        setResponsibilityPoints(parsePoints(post.responsibilities || ""));
-        setKeyRequirementPoints(parsePoints(post.keyRequirements || ""));
-        setTechStackPoints(parsePoints(post.techStack || ""));
       } catch (error) {
         setIsError(true);
         setMessage("Something went wrong");
@@ -98,31 +83,6 @@ export default function EditPostPage({
     });
   };
 
-  const handlePointChange = (
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number,
-    value: string
-  ) => {
-    setter((prev) => prev.map((item, itemIndex) => (itemIndex === index ? value : item)));
-  };
-
-  const addPoint = (setter: React.Dispatch<React.SetStateAction<string[]>>) => {
-    setter((prev) => [...prev, ""]);
-  };
-
-  const removePoint = (
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number
-  ) => {
-    setter((prev) => {
-      if (prev.length === 1) {
-        return [""];
-      }
-
-      return prev.filter((_, itemIndex) => itemIndex !== index);
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
@@ -140,9 +100,9 @@ export default function EditPostPage({
           title: formData.title,
           category: formData.category,
           description: formData.description,
-          keyRequirements: serializePoints(keyRequirementPoints),
-          techStack: serializePoints(techStackPoints),
-          responsibilities: serializePoints(responsibilityPoints),
+          keyRequirements: formData.keyRequirements,
+          techStack: formData.techStack,
+          responsibilities: formData.responsibilities,
           location: formData.location,
           workType: formData.workType || null,
           durationMonths: formData.durationMonths
@@ -152,11 +112,17 @@ export default function EditPostPage({
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { error?: string; message?: string } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
         setIsError(true);
-        setMessage(data.error || "Failed to update post");
+        setMessage(data.error || data.message || "Failed to update post");
         return;
       }
 
@@ -167,7 +133,7 @@ export default function EditPostPage({
       }, 500);
     } catch (error) {
       setIsError(true);
-      setMessage("Something went wrong");
+      setMessage("Network error. Please check the server and try again.");
     } finally {
       setLoading(false);
     }
@@ -209,9 +175,9 @@ export default function EditPostPage({
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Select category</option>
-                    <option value="IT">IT</option>
-                    <option value="Business">Business</option>
-                    <option value="Engineering">Engineering</option>
+                    <option value="COMPUTING">IT</option>
+                    <option value="BUSINESS">Business</option>
+                    <option value="ENGINEERING">Engineering</option>
                   </select>
                 </div>
 
@@ -230,99 +196,38 @@ export default function EditPostPage({
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Responsibilities</label>
-                  <div className="space-y-2">
-                    {responsibilityPoints.map((point, index) => (
-                      <div key={`responsibility-${index}`} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={point}
-                          onChange={(e) =>
-                            handlePointChange(setResponsibilityPoints, index, e.target.value)
-                          }
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          placeholder={`Responsibility ${index + 1}`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePoint(setResponsibilityPoints, index)}
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addPoint(setResponsibilityPoints)}
-                      className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
-                    >
-                      + Add Responsibility
-                    </button>
-                  </div>
+                  <textarea
+                    name="responsibilities"
+                    value={formData.responsibilities}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Add responsibilities (press Enter for new line)"
+                    rows={4}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Key Requirements</label>
-                  <div className="space-y-2">
-                    {keyRequirementPoints.map((point, index) => (
-                      <div key={`requirement-${index}`} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={point}
-                          onChange={(e) =>
-                            handlePointChange(setKeyRequirementPoints, index, e.target.value)
-                          }
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          placeholder={`Requirement ${index + 1}`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePoint(setKeyRequirementPoints, index)}
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addPoint(setKeyRequirementPoints)}
-                      className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
-                    >
-                      + Add Requirement
-                    </button>
-                  </div>
+                  <textarea
+                    name="keyRequirements"
+                    value={formData.keyRequirements}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Add key requirements (press Enter for new line)"
+                    rows={4}
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Tech Stack</label>
-                  <div className="space-y-2">
-                    {techStackPoints.map((point, index) => (
-                      <div key={`tech-${index}`} className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={point}
-                          onChange={(e) => handlePointChange(setTechStackPoints, index, e.target.value)}
-                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          placeholder={`Tech ${index + 1}`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removePoint(setTechStackPoints, index)}
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => addPoint(setTechStackPoints)}
-                      className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
-                    >
-                      + Add Tech
-                    </button>
-                  </div>
+                  <textarea
+                    name="techStack"
+                    value={formData.techStack}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Add tech stack (press Enter for new line)"
+                    rows={3}
+                  />
                 </div>
               </section>
 

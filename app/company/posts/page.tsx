@@ -14,7 +14,10 @@ type Post = {
   id: string;
   title: string;
   description: string;
+  category?: string | null;
   responsibilities?: string | null;
+  keyRequirements?: string | null;
+  techStack?: string | null;
   location?: string | null;
   workType?: string | null;
   durationMonths?: number | null;
@@ -27,37 +30,53 @@ type Post = {
 
 const splitDescriptionSections = (rawDescription: string) => {
   const description = rawDescription || "";
-  const qualificationsMarker = "\n\nQualifications:\n";
-  const experienceMarker = "\n\nExperience:\n";
+  const labels = ["Category", "Qualifications", "Experience", "Key Requirements", "Tech Stack"];
 
-  const qualificationsIndex = description.indexOf(qualificationsMarker);
-  const experienceIndex = description.indexOf(experienceMarker);
+  const extractSection = (label: string) => {
+    const marker = `\n\n${label}:\n`;
+    const start = description.indexOf(marker);
 
-  let coreDescription = description;
-  let qualifications = "";
-  let experience = "";
+    if (start < 0) return "";
 
-  if (qualificationsIndex >= 0) {
-    coreDescription = description.slice(0, qualificationsIndex);
+    const contentStart = start + marker.length;
+    let contentEnd = description.length;
 
-    if (experienceIndex > qualificationsIndex) {
-      qualifications = description
-        .slice(qualificationsIndex + qualificationsMarker.length, experienceIndex)
-        .trim();
-      experience = description.slice(experienceIndex + experienceMarker.length).trim();
-    } else {
-      qualifications = description.slice(qualificationsIndex + qualificationsMarker.length).trim();
-    }
-  } else if (experienceIndex >= 0) {
-    coreDescription = description.slice(0, experienceIndex);
-    experience = description.slice(experienceIndex + experienceMarker.length).trim();
-  }
+    labels.forEach((nextLabel) => {
+      const nextMarker = `\n\n${nextLabel}:\n`;
+      const nextIndex = description.indexOf(nextMarker, contentStart);
+      if (nextIndex >= 0 && nextIndex < contentEnd) {
+        contentEnd = nextIndex;
+      }
+    });
+
+    return description.slice(contentStart, contentEnd).trim();
+  };
+
+  const markerIndexes = labels
+    .map((label) => description.indexOf(`\n\n${label}:\n`))
+    .filter((index) => index >= 0);
+  const firstMarkerIndex = markerIndexes.length > 0 ? Math.min(...markerIndexes) : -1;
+
+  const coreDescription = (firstMarkerIndex >= 0
+    ? description.slice(0, firstMarkerIndex)
+    : description
+  ).trim();
 
   return {
-    coreDescription: coreDescription.trim(),
-    qualifications,
-    experience,
+    coreDescription,
+    qualifications: extractSection("Qualifications"),
+    keyRequirements: extractSection("Key Requirements"),
+    techStack: extractSection("Tech Stack"),
   };
+};
+
+const toLineItems = (value?: string | null) => {
+  if (!value) return [];
+
+  return value
+    .split(/\r?\n|\*/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 export default function CompanyPostsPage() {
@@ -187,14 +206,15 @@ export default function CompanyPostsPage() {
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
-      const { coreDescription, qualifications, experience } = splitDescriptionSections(
+      const { coreDescription, qualifications, keyRequirements, techStack } = splitDescriptionSections(
         post.description
       );
       const matchesSearch =
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         coreDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
         qualifications.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        experience.toLowerCase().includes(searchTerm.toLowerCase());
+        keyRequirements.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        techStack.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "ALL" || post.status === statusFilter;
@@ -293,6 +313,11 @@ export default function CompanyPostsPage() {
           {filteredPosts.map((post) => (
             (() => {
               const details = splitDescriptionSections(post.description);
+              const displayedKeyRequirements = post.keyRequirements?.trim() || details.keyRequirements;
+              const displayedTechStack = post.techStack?.trim() || details.techStack;
+              const responsibilityItems = toLineItems(post.responsibilities);
+              const keyRequirementItems = toLineItems(displayedKeyRequirements);
+              const techStackItems = toLineItems(displayedTechStack);
               return (
             <div
               key={post.id}
@@ -358,10 +383,6 @@ export default function CompanyPostsPage() {
                   <span className="font-semibold text-gray-900">Duration:</span>{" "}
                   {post.durationMonths ? `${post.durationMonths} months` : "Not specified"}
                 </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Stipend:</span>{" "}
-                  {post.stipendAmount ?? "Not specified"}
-                </p>
               </div>
 
               <div className="mt-4 rounded-lg bg-slate-50 p-4">
@@ -374,7 +395,11 @@ export default function CompanyPostsPage() {
               {post.responsibilities && (
                 <div className="mt-4 rounded-lg bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-gray-900">Responsibilities</h3>
-                  <p className="mt-1 text-sm text-gray-700">{post.responsibilities}</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {responsibilityItems.map((item, index) => (
+                      <li key={`responsibility-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -387,52 +412,27 @@ export default function CompanyPostsPage() {
                 </div>
               )}
 
-              {details.experience && (
+              {displayedKeyRequirements && (
                 <div className="mt-4 rounded-lg bg-slate-50 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Experience</h3>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
-                    {details.experience}
-                  </p>
+                  <h3 className="text-sm font-semibold text-gray-900">Key Requirements</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {keyRequirementItems.map((item, index) => (
+                      <li key={`requirement-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Required Skills</h3>
-                  <div className="flex min-h-9 flex-wrap gap-2">
-                    {post.requiredSkills.length > 0 ? (
-                      post.requiredSkills.map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700"
-                        >
-                          {skill.skillName}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No required skills</p>
-                    )}
-                  </div>
+              {displayedTechStack && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Tech Stack</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {techStackItems.map((item, index) => (
+                      <li key={`tech-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
-
-                <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Optional Skills</h3>
-                  <div className="flex min-h-9 flex-wrap gap-2">
-                    {post.optionalSkills.length > 0 ? (
-                      post.optionalSkills.map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700"
-                        >
-                          {skill.skillName}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No optional skills</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
               );
             })()
