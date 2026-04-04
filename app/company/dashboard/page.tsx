@@ -1,6 +1,7 @@
 "use client";
 
 import { Alert, Badge, Card, Spinner } from "flowbite-react";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -90,12 +91,21 @@ export default function CompanyDashboardPage() {
   const [missionStatement, setMissionStatement] = useState("");
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchCategory, setSearchCategory] = useState("");
+  const [searchLocation, setSearchLocation] = useState("");
+  const [appliedKeyword, setAppliedKeyword] = useState("");
+  const [appliedCategory, setAppliedCategory] = useState("");
+  const [appliedLocation, setAppliedLocation] = useState("");
 
   const companyPhotos = [
-    "/photos/image1.jpg",
     "/photos/image2.jpg",
+    "/photos/image5.jpg",
     "/photos/image3.jpg",
     "/photos/image4.jpg",
+    "/photos/image6.jpg",
+    "/photos/image7.jpg",
   ];
 
   useEffect(() => {
@@ -145,63 +155,171 @@ export default function CompanyDashboardPage() {
     fetchMissionStatement();
   }, [companyId]);
 
-  // Auto-rotate photos every 4 seconds
+  // Auto-rotate photos with a longer cycle
   useEffect(() => {
     const interval = setInterval(() => {
+      setSlideDirection(1);
       setCurrentPhotoIndex((prev) => (prev + 1) % companyPhotos.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [companyPhotos.length]);
 
+  const goToPhoto = (index: number) => {
+    setSlideDirection(index > currentPhotoIndex ? 1 : -1);
+    setCurrentPhotoIndex(index);
+  };
+
+  const handleSearchJobs = () => {
+    setAppliedKeyword(searchKeyword.trim());
+    setAppliedCategory(searchCategory.trim());
+    setAppliedLocation(searchLocation.trim());
+  };
+
+  const clearSearchJobs = () => {
+    setSearchKeyword("");
+    setSearchCategory("");
+    setSearchLocation("");
+    setAppliedKeyword("");
+    setAppliedCategory("");
+    setAppliedLocation("");
+  };
+
   const activePosts = posts.filter((p) => p.status === "ACTIVE");
+  const filteredPosts = activePosts.filter((post) => {
+    const normalizedTitle = post.title.toLowerCase();
+    const normalizedCategory = (post.category || post.workType || "").toLowerCase();
+    const normalizedLocation = (post.location || "").toLowerCase();
+    const normalizedDescription = (post.description || "").toLowerCase();
+
+    const matchesKeyword =
+      !appliedKeyword ||
+      normalizedTitle.includes(appliedKeyword.toLowerCase()) ||
+      normalizedDescription.includes(appliedKeyword.toLowerCase()) ||
+      (post.requiredSkills || []).some((skill) => skill.skillName.toLowerCase().includes(appliedKeyword.toLowerCase()));
+
+    const matchesCategory =
+      !appliedCategory ||
+      normalizedCategory.includes(appliedCategory.toLowerCase());
+
+    const matchesLocation =
+      !appliedLocation ||
+      normalizedLocation.includes(appliedLocation.toLowerCase());
+
+    return matchesKeyword && matchesCategory && matchesLocation;
+  });
+  const hasAppliedSearch = Boolean(appliedKeyword || appliedCategory || appliedLocation);
 
   return (
     <section className="min-h-screen space-y-6 bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100 p-4 md:p-6">
-      <Card className="border-0 shadow-xl">
-        <div className="grid items-center gap-8 md:grid-cols-2">
-          <div className="flex flex-col justify-center space-y-4 px-2 md:px-6">
-            <h1 className="text-4xl font-extrabold leading-tight text-slate-900 md:text-5xl">
-              Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-blue-600">{companyName || "Company"}</span>
-            </h1>
+      <div className="mx-auto w-full max-w-5xl px-2 md:px-4">
+        <div className="grid gap-2 rounded-2xl bg-white/90 p-2 shadow-2xl backdrop-blur md:grid-cols-[1.25fr_0.9fr_0.9fr_auto] md:gap-3 md:p-3">
+          <input
+            value={searchKeyword}
+            onChange={(event) => setSearchKeyword(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-cyan-500"
+            placeholder="keywords, title, skills"
+          />
+          <select
+            value={searchCategory}
+            onChange={(event) => setSearchCategory(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-cyan-500"
+          >
+            <option value="">All categories</option>
+            <option value="computing">IT</option>
+            <option value="business">Business</option>
+            <option value="engineering">Engineering</option>
+          </select>
+          <input
+            value={searchLocation}
+            onChange={(event) => setSearchLocation(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-cyan-500"
+            placeholder="location"
+          />
+          <button
+            type="button"
+            onClick={handleSearchJobs}
+            className="rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-700"
+          >
+            Search Jobs
+          </button>
+        </div>
+      </div>
 
-            <p className="max-w-xl text-sm leading-relaxed text-slate-600 md:text-base">
-              Manage internship posts, track applications, and monitor your hiring performance in one place. Connect with top talent and build your dream team.
-            </p>
-          </div>
+      <Card className="overflow-hidden border-0 p-0 shadow-2xl">
+        <div className="relative isolate min-h-[560px] overflow-hidden rounded-3xl bg-slate-950">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPhotoIndex}
+              className="absolute inset-0"
+              initial={{ opacity: 0, x: slideDirection > 0 ? 120 : -120, scale: 1.04 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: slideDirection > 0 ? -120 : 120, scale: 1.02 }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Image
+                src={companyPhotos[currentPhotoIndex]}
+                alt={`Company showcase ${currentPhotoIndex + 1}`}
+                fill
+                priority
+                className="object-cover"
+              />
+            </motion.div>
+          </AnimatePresence>
 
-          <div className="relative flex items-center justify-center py-6 md:py-10">
-            <div className="relative h-80 w-full max-w-sm">
-              <div className="absolute inset-0 rounded-full shadow-2xl" style={{
-                background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(200,220,255,0.7))",
-                filter: "blur(0.5px)",
-                transform: "scaleX(1.1)",
-              }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
 
-              <div className="relative h-full w-full overflow-hidden rounded-full shadow-xl">
-                <Image
-                  src={companyPhotos[currentPhotoIndex]}
-                  alt={`Company showcase ${currentPhotoIndex + 1}`}
-                  fill
-                  className="object-cover transition-opacity duration-500"
-                  priority
+          <motion.div
+            aria-hidden="true"
+            className="absolute -left-10 top-16 h-36 w-36 rounded-full bg-white/10 blur-2xl"
+            animate={{ y: [0, -14, 0], x: [0, 12, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            aria-hidden="true"
+            className="absolute -right-8 bottom-16 h-44 w-44 rounded-full bg-cyan-400/15 blur-2xl"
+            animate={{ y: [0, 12, 0], x: [0, -10, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <div className="relative z-10 flex min-h-[560px] flex-col justify-center px-6 py-10 md:px-12 lg:px-16">
+            <div className="max-w-3xl text-white">
+              <motion.h1
+                className="max-w-2xl text-4xl font-extrabold leading-tight text-white md:text-6xl"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+              >
+                Welcome,
+                <span className="mt-2 block text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-white to-sky-200">
+                  {companyName || "Company"}
+                </span>
+              </motion.h1>
+
+              <motion.p
+                className="mt-5 max-w-2xl text-sm leading-relaxed text-slate-200 md:text-base"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.12, ease: "easeOut" }}
+              >
+                Manage internship posts, track applications, and monitor your hiring performance in one place.
+                Connect with top talent and build your dream team.
+              </motion.p>
+            </div>
+
+            <div className="mt-8 flex items-center gap-2">
+              {companyPhotos.map((_, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => goToPhoto(index)}
+                  className={`h-2.5 rounded-full transition-all ${
+                    index === currentPhotoIndex ? "w-9 bg-white" : "w-2.5 bg-white/45 hover:bg-white/80"
+                  }`}
+                  aria-label={`Go to photo ${index + 1}`}
+                  whileHover={{ scale: 1.25 }}
+                  whileTap={{ scale: 0.92 }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-              </div>
-
-              <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                {companyPhotos.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentPhotoIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentPhotoIndex
-                        ? "w-6 bg-white"
-                        : "w-2 bg-white/50 hover:bg-white/75"
-                    }`}
-                    aria-label={`Go to photo ${index + 1}`}
-                  />
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -212,6 +330,22 @@ export default function CompanyDashboardPage() {
           <Alert color="success" className="mb-4">
             Post published successfully.
           </Alert>
+        )}
+
+        {hasAppliedSearch && (
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
+            <span className="font-bold uppercase tracking-wide text-cyan-700">Filtered results</span>
+            {appliedKeyword && <Badge color="info" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedKeyword}</Badge>}
+            {appliedCategory && <Badge color="success" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedCategory}</Badge>}
+            {appliedLocation && <Badge color="warning" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedLocation}</Badge>}
+            <button
+              type="button"
+              onClick={clearSearchJobs}
+              className="ml-auto rounded-full bg-cyan-600 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-cyan-700"
+            >
+              Clear
+            </button>
+          </div>
         )}
 
         {loadingPosts && (
@@ -227,8 +361,14 @@ export default function CompanyDashboardPage() {
           </div>
         )}
 
+        {!loadingPosts && activePosts.length > 0 && filteredPosts.length === 0 && (
+          <div className="rounded-xl border border-dashed border-cyan-200 bg-cyan-50 py-10 text-center text-cyan-700">
+            No jobs match the selected filters.
+          </div>
+        )}
+
         <div className="space-y-4">
-          {activePosts.map((post) => (
+          {filteredPosts.map((post) => (
             (() => {
               const details = splitDescriptionSections(post.description);
               const displayedKeyRequirements = post.keyRequirements?.trim() || details.keyRequirements;
