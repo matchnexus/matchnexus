@@ -127,9 +127,7 @@ export async function PUT(req: NextRequest) {
       return { student: updatedStudent, resume: resumeRecord };
     });
 
-    if (result.resume) {
-      await recomputeStudentFeedRecommendations(result.student.id);
-    }
+    await recomputeStudentFeedRecommendations(result.student.id);
 
     return NextResponse.json(
       { message: "Profile updated successfully", data: result },
