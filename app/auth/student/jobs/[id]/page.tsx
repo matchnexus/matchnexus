@@ -219,7 +219,7 @@ export default function JobDetailsPage({ params }: Props) {
                 <div className="pt-4 space-y-3">
                   <Button
                     onClick={handleApply}
-                    className="w-full bg-blue-600 enabled:hover:bg-blue-700 rounded-xl font-bold py-2 shadow-lg shadow-blue-100 border-none uppercase tracking-widest text-xs"
+                    className="w-full bg-sky-600 enabled:hover:bg-sky-700 rounded-xl font-bold py-2 shadow-lg shadow-sky-100 border-none uppercase tracking-widest text-xs"
                   >
                     Apply
                   </Button>

@@ -46,13 +46,15 @@ export default function JobsPage() {
   // 4. Filter Logic (දැන් වැඩ කරන්නේ searchQuery සහ filterCategory මතයි)
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job) => {
-      const matchesSearch = 
+      const matchesSearch =
         job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (job.company?.companyName && job.company.companyName.toLowerCase().includes(searchQuery.toLowerCase()));
+        (job.company?.companyName &&
+          job.company.companyName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()));
 
-      const matchesCategory = 
-        filterCategory === "All Categories" || 
-        job.category === filterCategory;
+      const matchesCategory =
+        filterCategory === "All Categories" || job.category === filterCategory;
 
       return matchesSearch && matchesCategory;
     });
@@ -62,13 +64,42 @@ export default function JobsPage() {
   const startIndex = (currentPage - 1) * jobsPerPage;
   const selectedJobs = filteredJobs.slice(startIndex, startIndex + jobsPerPage);
 
+  const heroImages = [
+    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80",
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80",
+    "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&q=80",
+  ];
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white pb-10 font-sans -mx-4 -mt-6">
       <section className="relative bg-sky-700 py-20 px-6 text-center overflow-hidden">
+        {/* ── Carousel background ── */}
+        {heroImages.map((img, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${img})`,
+              opacity: currentSlide === i ? 1 : 0,
+            }}
+          />
+        ))}
+
+        {/* your existing overlay — unchanged */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent opacity-50" />
-        
+
+        {/* your existing content — unchanged */}
         <div className="relative z-10 mx-auto max-w-4xl">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 text-4xl font-extrabold text-white md:text-5xl tracking-tight"
@@ -76,7 +107,8 @@ export default function JobsPage() {
             Find Your Dream Career
           </motion.h1>
           <p className="mb-10 text-lg text-white/90 font-medium max-w-2xl mx-auto">
-            Discover smart ML-powered internship opportunities curated for your success.
+            Discover smart ML-powered internship opportunities curated for your
+            success.
           </p>
 
           <div className="mx-auto flex flex-col items-center gap-3 rounded-2xl bg-white p-3 shadow-xl md:flex-row max-w-5xl">
@@ -90,12 +122,12 @@ export default function JobsPage() {
                 className="w-full border-none focus:ring-0 text-gray-700 text-sm placeholder:text-gray-400"
               />
             </div>
-            
+
             <div className="hidden h-8 w-px bg-gray-200 md:block"></div>
-            
+
             <div className="flex w-full items-center px-4 md:w-1/4">
               <HiOutlineBriefcase className="mr-2 text-xl text-gray-400" />
-              <select 
+              <select
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
                 className="w-full border-none bg-transparent focus:ring-0 text-gray-600 text-sm font-semibold"
@@ -107,13 +139,25 @@ export default function JobsPage() {
               </select>
             </div>
 
-            {/* 5. Button එකට onClick එක එකතු කිරීම */}
-            <button 
+            <button
               onClick={handleSearch}
               className="w-full rounded-xl bg-lime-500 px-8 py-3 text-sm font-extrabold text-white transition-all hover:bg-lime-400 md:w-auto shadow-lg"
             >
               SEARCH
             </button>
+          </div>
+
+          {/* Dot indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {heroImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  currentSlide === i ? "w-6 bg-white" : "w-2 bg-white/40"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -126,7 +170,8 @@ export default function JobsPage() {
               Latest <span className="text-sky-600">Opportunities</span>
             </h2>
             <p className="text-gray-500 mt-1 font-medium">
-              Showing {selectedJobs.length} of {filteredJobs.length} available roles
+              Showing {selectedJobs.length} of {filteredJobs.length} available
+              roles
             </p>
           </div>
         </div>
@@ -134,7 +179,11 @@ export default function JobsPage() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {selectedJobs.length > 0 ? (
             selectedJobs.map((job, index) => (
-              <motion.div key={job.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <motion.div
+                key={job.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
                 <Card className="group border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white h-full">
                   <div className="flex flex-col h-full">
                     <div className="flex justify-between items-start mb-5">
@@ -161,7 +210,10 @@ export default function JobsPage() {
                     </div>
 
                     <div className="mt-auto pt-5 border-t border-gray-50 flex justify-end">
-                      <Link href={`/auth/student/jobs/${job.id}`} className="w-full sm:w-auto">
+                      <Link
+                        href={`/auth/student/jobs/${job.id}`}
+                        className="w-full sm:w-auto"
+                      >
                         <button className="w-full rounded-lg bg-gray-900 px-6 py-2.5 text-xs font-bold text-white hover:bg-sky-600 transition-all shadow-sm uppercase tracking-wider">
                           Apply Now
                         </button>
@@ -173,7 +225,9 @@ export default function JobsPage() {
             ))
           ) : (
             <div className="col-span-full py-20 text-center">
-              <p className="text-gray-400 font-bold uppercase">No matching jobs found.</p>
+              <p className="text-gray-400 font-bold uppercase">
+                No matching jobs found.
+              </p>
             </div>
           )}
         </div>
