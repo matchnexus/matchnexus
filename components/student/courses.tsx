@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   HiAcademicCap, HiBookOpen, HiClock, HiSearch, HiStar,
@@ -26,10 +26,11 @@ type TabId = (typeof TABS)[number]["id"];
 
 const CARD_ACCENTS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#f59e0b", "#10b981", "#ec4899"];
 
-function ScheduleModal({ courseId, existing, onSave, onClose }: {
+function ScheduleModal({ courseId, existing, onSave, onClose, courseList }: {
   courseId: string; existing?: Schedule; onSave: (s: Schedule) => void; onClose: () => void;
+  courseList: CourseItem[];
 }) {
-  const course = MOCK_COURSES.find((c) => c.id === courseId)!;
+  const course = courseList.find((c) => c.id === courseId) ?? MOCK_COURSES.find((c) => c.id === courseId)!;
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(existing?.date ?? "");
   const [note, setNote] = useState(existing?.note ?? "");
@@ -99,28 +100,56 @@ function StatusBadge({ status }: { status: "in_progress" | "not_started" | "comp
   );
 }
 
+type CourseItem = { id: string; title: string; provider: string; duration: string; progress: number; status: "in_progress" | "not_started" | "completed" };
+
 export default function StudentCoursesHub() {
   const [activeTab, setActiveTab] = useState<TabId>("browse");
   const [search, setSearch] = useState("");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set(["2"]));
+  const [courses, setCourses] = useState<CourseItem[]>(MOCK_COURSES);
   const router = useRouter();
+
+  // Fetch real courses from DB, fall back to mock if unavailable
+  useEffect(() => {
+    fetch("/api/student/courses")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.courses && data.courses.length > 0) {
+          const shaped: CourseItem[] = data.courses.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            provider: "MatchNexus Learning",
+            duration: c.moduleCount ? `${c.moduleCount} modules` : "Self-paced",
+            progress: c.enrollment ? 0 : 0,
+            status: c.enrollment?.enrollmentStatus === "COMPLETED" ? "completed"
+              : c.enrollment ? "in_progress"
+              : "not_started",
+          }));
+          setCourses(shaped);
+        }
+        // If empty or error, keep mock data
+      })
+      .catch(() => {
+        // Keep mock data on network error
+      });
+  }, []);
 
   const toggleSave = (id: string) =>
     setSavedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const filteredCourses = useMemo(() => {
-    let courses = MOCK_COURSES;
-    if (activeTab === "learning") courses = courses.filter((c) => c.status === "in_progress" || c.status === "completed");
-    if (activeTab === "saved") courses = courses.filter((c) => savedIds.has(c.id));
+    let list = courses;
+    if (activeTab === "learning") list = list.filter((c) => c.status === "in_progress" || c.status === "completed");
+    if (activeTab === "saved") list = list.filter((c) => savedIds.has(c.id));
     if (activeTab === "schedule") return [];
     if (search.trim()) {
       const q = search.toLowerCase();
-      courses = courses.filter((c) => c.title.toLowerCase().includes(q) || c.provider.toLowerCase().includes(q));
+      list = list.filter((c) => c.title.toLowerCase().includes(q) || c.provider.toLowerCase().includes(q));
     }
-    return courses;
-  }, [activeTab, search, savedIds]);
+    return list;
+  }, [activeTab, search, savedIds, courses]);
 
   const headings: Record<TabId, { title: string; desc: string }> = {
     browse:   { title: "Course Hub",    desc: "Explore learning paths and build your skills." },
@@ -139,6 +168,7 @@ export default function StudentCoursesHub() {
           existing={schedules.find((s) => s.courseId === schedulingId)}
           onSave={(s) => setSchedules((prev) => [...prev.filter((x) => x.courseId !== s.courseId), s])}
           onClose={() => setSchedulingId(null)}
+          courseList={courses}
         />
       )}
 
@@ -253,7 +283,7 @@ export default function StudentCoursesHub() {
               <div className="rounded-2xl border border-blue-100 p-5" style={{ background: "rgba(255,255,255,0.65)" }}>
                 <p className="mb-4 text-xs font-black uppercase tracking-wide text-gray-500">All Courses</p>
                 <div className="space-y-3">
-                  {MOCK_COURSES.map((course) => {
+                  {courses.map((course) => {
                     const sched = schedules.find((s) => s.courseId === course.id);
                     return (
                       <div key={course.id} className="flex flex-col gap-3 rounded-2xl border border-blue-100 p-4 sm:flex-row sm:items-center sm:justify-between" style={{ background: "rgba(255,255,255,0.8)" }}>
@@ -289,7 +319,7 @@ export default function StudentCoursesHub() {
                   <p className="mb-4 text-xs font-black uppercase tracking-wide text-gray-500">Upcoming</p>
                   <div className="space-y-2">
                     {[...schedules].sort((a, b) => a.date.localeCompare(b.date)).map((s) => {
-                      const course = MOCK_COURSES.find((c) => c.id === s.courseId)!;
+                      const course = courses.find((c) => c.id === s.courseId)!;
                       return (
                         <div key={s.courseId} className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3">
                           <HiCalendar className="h-5 w-5 shrink-0 text-emerald-500" />
