@@ -8,23 +8,40 @@ export default function CompanyNavbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [companyLogoUrl, setCompanyLogoUrl] = useState("");
+
+  const syncCompanyIdentity = () => {
+    setCompanyName(localStorage.getItem("companyName") || "");
+    setCompanyLogoUrl(localStorage.getItem("companyLogoUrl") || "");
+  };
 
   useEffect(() => {
-    const storedName = localStorage.getItem("companyName") || "";
-    setCompanyName(storedName);
+    syncCompanyIdentity();
+
+    const onProfileUpdated = () => syncCompanyIdentity();
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || event.key === "companyName" || event.key === "companyLogoUrl") {
+        syncCompanyIdentity();
+      }
+    };
+
+    window.addEventListener("company-profile-updated", onProfileUpdated);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("company-profile-updated", onProfileUpdated);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const tabs = [
-    { name: "Dashboard", href: "/company/dashboard" },
+    { name: "Home", href: "/company/dashboard" },
+    { name: "Applications", href: "/company/applications" },
     { name: "Analytics", href: "/company/analytics" },
     { name: "Posts", href: "/company/posts" },
-    { name: "Profile", href: "/company/profile" },
+    { name: "Settings", href: "/company/profile" },
+    { name: "Contact Us", href: "/company/contactus" },
   ];
-
-  const baseLink =
-    "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition";
-  const normalLink = "text-gray-700 hover:bg-gray-100 hover:text-gray-900";
-  const activeLink = "bg-blue-600 text-white shadow-sm";
 
   const isActive = (href: string) => {
     if (href === "/company/dashboard") return pathname === "/company/dashboard";
@@ -34,75 +51,113 @@ export default function CompanyNavbar() {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const linkClass = (href: string) =>
-    `${baseLink} ${isActive(href) ? activeLink : normalLink}`;
-
-  const displayTitle = companyName ? `Welcome, ${companyName}` : "Welcome";
+  const displayTitle = companyName ? companyName : "MatchNexus";
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full border-b bg-white">
-      <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5">
+    <header className="fixed top-0 left-0 z-50 w-full bg-gradient-to-r from-blue-50 to-purple-50 border-b border-purple-100/50 shadow-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
+
+        {/* LEFT - LOGO */}
         <Link href="/company/dashboard" className="flex items-center gap-2">
-          <span className="text-xl font-extrabold tracking-tight text-gray-900">
+          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+            {companyLogoUrl ? (
+              <img
+                src={companyLogoUrl}
+                alt="Company logo"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              "M"
+            )}
+          </div>
+          <h1 className="hidden text-lg font-bold text-slate-800 md:block">
             {displayTitle}
-          </span>
+          </h1>
         </Link>
 
+        {/* MOBILE TOGGLE */}
         <button
-          className="inline-flex items-center rounded-lg p-2 text-gray-900 hover:bg-gray-100 md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Open company menu"
-          type="button"
+          onClick={() => setOpen(!open)}
+          className="md:hidden p-2 text-slate-700 hover:bg-white/50 rounded-lg transition"
+          aria-label="Toggle menu"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 7H20M4 12H20M4 17H20"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          ☰
         </button>
 
-        <nav
-          className={[
-            "md:absolute md:left-1/2 md:flex md:-translate-x-1/2 md:items-center",
-            open
-              ? "absolute left-0 top-full w-full border-b bg-white px-6 py-6 shadow-sm md:top-auto md:w-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none"
-              : "hidden md:flex",
-          ].join(" ")}
-        >
-          <div className="flex flex-col gap-3 md:mx-auto md:flex-row md:items-center md:gap-2">
-            {tabs.map((tab) => (
-              <Link key={tab.href} href={tab.href} className={linkClass(tab.href)}>
-                <span>{tab.name}</span>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-6 md:hidden">
+        {/* CENTER NAV - Desktop */}
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+          {tabs.map((tab) => (
             <Link
-              href="/auth/company/login"
-              onClick={() => localStorage.removeItem("companyName")}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+              key={tab.href}
+              href={tab.href}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                isActive(tab.href)
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+              }`}
             >
-              <span className="text-base leading-none">🚪</span>
-              <span>Logout</span>
+              {tab.name}
             </Link>
-          </div>
+          ))}
         </nav>
 
-        <div className="hidden md:flex md:items-center md:gap-4">
+        {/* RIGHT SIDE - Logout */}
+        <div className="flex items-center gap-3 md:gap-4">
           <Link
             href="/auth/company/login"
-            onClick={() => localStorage.removeItem("companyName")}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+            onClick={() => {
+              localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
+            }}
+            className="hidden md:inline-flex items-center rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
           >
-            <span className="text-base leading-none"></span>
-            <span>Logout</span>
+            Logout
+          </Link>
+
+          <Link
+            href="/auth/company/login"
+            onClick={() => {
+              localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
+            }}
+            className="md:hidden p-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
+            title="Logout"
+          >
+            🚪
           </Link>
         </div>
       </div>
+
+      {/* MOBILE MENU */}
+      {open && (
+        <nav className="md:hidden border-t border-purple-100/50 bg-white/90 px-4 py-3 space-y-2">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              onClick={() => setOpen(false)}
+              className={`block px-4 py-2 rounded-lg text-sm font-medium transition ${
+                isActive(tab.href)
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {tab.name}
+            </Link>
+          ))}
+          <Link
+            href="/auth/company/login"
+            onClick={() => {
+              localStorage.removeItem("companyName");
+              localStorage.removeItem("companyLogoUrl");
+              setOpen(false);
+            }}
+            className="block w-full px-4 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition text-center"
+          >
+            Logout
+          </Link>
+        </nav>
+      )}
     </header>
   );
 }

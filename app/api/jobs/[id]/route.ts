@@ -6,9 +6,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const job = await prisma.internshipPost.findUnique({
+    const job = await prisma.internshipPost.findFirst({
       where: {
         id: params.id,
+        status: "ACTIVE",
       },
       include: {
         company: true,

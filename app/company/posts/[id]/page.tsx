@@ -13,15 +13,15 @@ export default function EditPostPage({
 
   const [formData, setFormData] = useState({
     title: "",
+    category: "",
     description: "",
     responsibilities: "",
+    keyRequirements: "",
+    techStack: "",
     location: "",
     workType: "",
     durationMonths: "",
-    stipendAmount: "",
     applicationDeadline: "",
-    requiredSkills: "",
-    optionalSkills: "",
   });
 
   const [message, setMessage] = useState("");
@@ -51,21 +51,17 @@ export default function EditPostPage({
 
         setFormData({
           title: post.title || "",
+          category: post.category || "",
           description: post.description || "",
           responsibilities: post.responsibilities || "",
+          keyRequirements: post.keyRequirements || "",
+          techStack: post.techStack || "",
           location: post.location || "",
           workType: post.workType || "",
           durationMonths: post.durationMonths?.toString() || "",
-          stipendAmount: post.stipendAmount?.toString() || "",
           applicationDeadline: post.applicationDeadline
             ? post.applicationDeadline.split("T")[0]
             : "",
-          requiredSkills: post.requiredSkills
-            .map((skill: { skillName: string }) => skill.skillName)
-            .join(", "),
-          optionalSkills: post.optionalSkills
-            .map((skill: { skillName: string }) => skill.skillName)
-            .join(", "),
         });
       } catch (error) {
         setIsError(true);
@@ -102,27 +98,31 @@ export default function EditPostPage({
         },
         body: JSON.stringify({
           title: formData.title,
+          category: formData.category,
           description: formData.description,
+          keyRequirements: formData.keyRequirements,
+          techStack: formData.techStack,
           responsibilities: formData.responsibilities,
           location: formData.location,
           workType: formData.workType || null,
           durationMonths: formData.durationMonths
             ? Number(formData.durationMonths)
             : null,
-          stipendAmount: formData.stipendAmount
-            ? Number(formData.stipendAmount)
-            : null,
           applicationDeadline: formData.applicationDeadline,
-          requiredSkills: formData.requiredSkills,
-          optionalSkills: formData.optionalSkills,
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { error?: string; message?: string } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
         setIsError(true);
-        setMessage(data.error || "Failed to update post");
+        setMessage(data.error || data.message || "Failed to update post");
         return;
       }
 
@@ -133,16 +133,16 @@ export default function EditPostPage({
       }, 500);
     } catch (error) {
       setIsError(true);
-      setMessage("Something went wrong");
+      setMessage("Network error. Please check the server and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-transparent px-4 py-6 md:py-8">
       <div className="mx-auto max-w-4xl space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
           {loadingPost ? (
             <div className="space-y-3">
               <div className="h-5 w-48 animate-pulse rounded bg-slate-200" />
@@ -167,6 +167,21 @@ export default function EditPostPage({
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Category</label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Select category</option>
+                    <option value="COMPUTING">IT</option>
+                    <option value="BUSINESS">Business</option>
+                    <option value="ENGINEERING">Engineering</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Description</label>
                   <textarea
                     name="description"
@@ -186,7 +201,31 @@ export default function EditPostPage({
                     value={formData.responsibilities}
                     onChange={handleChange}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="List key tasks and responsibilities"
+                    placeholder="Add responsibilities (press Enter for new line)"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Key Requirements</label>
+                  <textarea
+                    name="keyRequirements"
+                    value={formData.keyRequirements}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Add key requirements (press Enter for new line)"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Tech Stack</label>
+                  <textarea
+                    name="techStack"
+                    value={formData.techStack}
+                    onChange={handleChange}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Add tech stack (press Enter for new line)"
                     rows={3}
                   />
                 </div>
@@ -236,19 +275,6 @@ export default function EditPostPage({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Stipend</label>
-                    <input
-                      type="number"
-                      min={0}
-                      name="stipendAmount"
-                      value={formData.stipendAmount}
-                      onChange={handleChange}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                      placeholder="e.g. 50000"
-                    />
-                  </div>
-
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-semibold text-slate-700">Application Deadline</label>
                     <input
@@ -260,34 +286,6 @@ export default function EditPostPage({
                       required
                     />
                   </div>
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Skills</h2>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Required Skills</label>
-                  <input
-                    type="text"
-                    name="requiredSkills"
-                    value={formData.requiredSkills}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="React, TypeScript, Git"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Optional Skills</label>
-                  <input
-                    type="text"
-                    name="optionalSkills"
-                    value={formData.optionalSkills}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="Next.js, Tailwind, Node.js"
-                  />
                 </div>
               </section>
 

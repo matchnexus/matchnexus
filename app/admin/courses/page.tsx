@@ -156,7 +156,7 @@ function DeleteConfirmModal({ course, onClose, onConfirm }: {
           <h3 className="text-base font-bold text-gray-900">Delete Course</h3>
         </div>
         <p className="text-sm text-gray-600">
-          Are you sure you want to delete <span className="font-semibold text-gray-900">"{course.title}"</span>? This cannot be undone.
+          Are you sure you want to delete <span className="font-semibold text-gray-900">&quot;{course.title}&quot;</span>? This cannot be undone.
         </p>
         <div className="flex justify-end gap-3 pt-2">
           <button onClick={onClose}
