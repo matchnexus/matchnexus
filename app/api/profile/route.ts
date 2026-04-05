@@ -8,22 +8,30 @@ export async function GET() {
     const userId = cookieStore.get("userId")?.value;
 
     if (!userId) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { student: true },
+      include: {
+        student: {
+          include: {
+            skills: {
+              include: {
+                skill: true,
+              },
+            },
+            resumes: {
+              orderBy: { uploadedAt: "desc" },
+              take: 1,
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -34,11 +42,7 @@ export async function GET() {
         student: user.student,
       },
     });
-
   } catch (error) {
-    return NextResponse.json(
-      { message: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

@@ -8,7 +8,6 @@ import {
   HiOutlineLocationMarker,
   HiOutlineBriefcase,
 } from "react-icons/hi";
-import { useSession } from "next-auth/react";
 
 // --- Dummy Data (Total 18 jobs for 2 pages) ---
 const allJobs = Array.from({ length: 18 }, (_, i) => ({
@@ -38,11 +37,6 @@ const allJobs = Array.from({ length: 18 }, (_, i) => ({
 export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 9;
-
-  const { data: session } = useSession();
-
-  console.log("ddddddddd",session?.user.id);
-  console.log(session?.user.role);
 
   // Pagination Logic
   const onPageChange = (page: number) => setCurrentPage(page);
@@ -137,7 +131,7 @@ export default function JobsPage() {
                 </div>
 
                 <div className="mt-8 flex items-center justify-end border-t border-gray-50 pt-5">
-                  <Link href={`/jobs/${job.id}`}>
+                  <Link href={`/auth/student/jobs/${job.id}`}>
                     <button className="rounded-xl bg-slate-900 px-6 py-2.5 text-[10px] font-black text-white hover:bg-blue-600 transition-all shadow-md uppercase tracking-wider">
                       Apply Now
                     </button>
