@@ -29,7 +29,7 @@ export default async function AdminApplicationsPage() {
         description="Monitor student applications, statuses, and ML scoring results."
       />
 
-      <AdminApplicationsView applications ={applications} />
+      <AdminApplicationsView applications={applications} />
     </div>
   );
 }
