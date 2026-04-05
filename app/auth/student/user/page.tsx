@@ -10,6 +10,7 @@ import {
   Dropdown,
 } from "flowbite-react";
 import { useState, ChangeEvent, useRef, KeyboardEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   HiLocationMarker,
   HiDownload,
@@ -27,6 +28,7 @@ import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 
 export default function UserFriendlyProfile() {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -180,6 +182,16 @@ export default function UserFriendlyProfile() {
       if (!res.ok) {
         const err = await res.json();
         toast.error(err.error || "Update failed");
+        return;
+      }
+
+      const payload = await res.json();
+
+      if (payload?.data?.resume?.filePath) {
+        setExistingResumePath(payload.data.resume.filePath);
+        setForm((prev) => ({ ...prev, cvFile: null }));
+        toast.success("CV uploaded. Opening matched jobs...");
+        router.push("/auth/student/suggestions");
         return;
       }
 

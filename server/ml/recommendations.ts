@@ -1,6 +1,7 @@
 import { Prisma, RecommendationContext } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateMatchScore } from "@/server/ml/matching";
+import { analyzeResumeWithExternalApi } from "@/server/ml/ai";
 import {
   extractResumeTextFromPath,
   extractSkillsFromResumeText,
@@ -79,7 +80,8 @@ export type CompanyApplicantRankRow = {
 
 function buildMergedStudent(
   student: Prisma.StudentGetPayload<{ include: typeof studentInclude }>,
-  resumeSkills: string[]
+  resumeSkills: string[],
+  aiTrackHint: "COMPUTING" | "BUSINESS" | "ENGINEERING" | null = null
 ) {
   const existingSkills = student.skills.map((entry) => ({
     skill: entry.skill,
@@ -102,6 +104,7 @@ function buildMergedStudent(
   return {
     ...student,
     skills: mergedSkills,
+    aiTrackHint,
   };
 }
 
@@ -123,14 +126,27 @@ export async function getStudentJobRecommendations(studentUserId: string) {
   const resumePath = student.resumes[0]?.filePath ?? null;
   const resumeText = resumePath ? await extractResumeTextFromPath(resumePath) : "";
   const catalogSkills = await prisma.skill.findMany({ select: { name: true } });
-  const resumeSkills = resumeText
+  const localResumeSkills = resumeText
     ? extractSkillsFromResumeText(
         resumeText,
         catalogSkills.map((skill) => skill.name)
       )
     : [];
+  const aiAnalysis = resumeText
+    ? await analyzeResumeWithExternalApi(
+        resumeText,
+        catalogSkills.map((skill) => skill.name)
+      )
+    : null;
+  const resumeSkills = Array.from(
+    new Set([...(aiAnalysis?.skills ?? []), ...localResumeSkills])
+  );
 
-  const mergedStudent = buildMergedStudent(student, resumeSkills);
+  const mergedStudent = buildMergedStudent(
+    student,
+    resumeSkills,
+    aiAnalysis?.targetTrack ?? null
+  );
   const posts = await prisma.internshipPost.findMany({
     where: { status: "ACTIVE" },
     include: recommendationInclude,
@@ -148,7 +164,7 @@ export async function getStudentJobRecommendations(studentUserId: string) {
         workType: post.workType,
         applicationDeadline: post.applicationDeadline,
         score: score.overallScore,
-        qualified: score.missingRequiredSkills.length === 0 && score.overallScore >= 70,
+        qualified: score.isRecommended,
         rank: 0,
         matchedRequiredSkills: score.matchedRequiredSkills,
         matchedOptionalSkills: score.matchedOptionalSkills,
@@ -180,6 +196,11 @@ export async function getCompanyApplicantRankings(companyId: string) {
     },
     include: {
       company: true,
+      requiredSkills: true,
+      optionalSkills: true,
+      postSkills: {
+        include: { skill: true },
+      },
       applications: {
         include: {
           student: {
@@ -192,6 +213,9 @@ export async function getCompanyApplicantRankings(companyId: string) {
                 take: 1,
               },
               user: true,
+              applications: {
+                select: { id: true },
+              },
             },
           },
           mlScore: true,
@@ -212,12 +236,21 @@ export async function getCompanyApplicantRankings(companyId: string) {
         post.applications.map(async (application) => {
           const resumePath = application.student.resumes[0]?.filePath ?? null;
           const resumeText = resumePath ? await extractResumeTextFromPath(resumePath) : "";
-          const resumeSkills = resumeText
+          const localResumeSkills = resumeText
             ? extractSkillsFromResumeText(
                 resumeText,
                 catalogSkills.map((skill) => skill.name)
               )
             : [];
+          const aiAnalysis = resumeText
+            ? await analyzeResumeWithExternalApi(
+                resumeText,
+                catalogSkills.map((skill) => skill.name)
+              )
+            : null;
+          const resumeSkills = Array.from(
+            new Set([...(aiAnalysis?.skills ?? []), ...localResumeSkills])
+          );
 
           const mergedStudent = {
             ...application.student,
@@ -235,6 +268,7 @@ export async function getCompanyApplicantRankings(companyId: string) {
                   level: null,
                 })),
             ],
+              aiTrackHint: aiAnalysis?.targetTrack ?? null,
           };
 
           const score = application.mlScore

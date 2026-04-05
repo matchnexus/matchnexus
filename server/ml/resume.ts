@@ -1,7 +1,11 @@
 import fs from "fs/promises";
 import path from "path";
+import { createRequire } from "module";
+import { pathToFileURL } from "url";
 
 const WORD_SPLIT = /[^a-z0-9+.#\-]+/gi;
+const require = createRequire(import.meta.url);
+let isPdfWorkerConfigured = false;
 
 function normalizeText(input: string): string {
   return input
@@ -21,17 +25,56 @@ function normalizeSkillName(input: string): string {
 }
 
 async function readPdfText(fileBuffer: Buffer): Promise<string> {
-  const pdfParseModule = await import("pdf-parse");
-  const pdfParse = (pdfParseModule as unknown as {
-    default?: (buffer: Buffer) => Promise<{ text: string }>;
-  }).default ?? (pdfParseModule as unknown as (buffer: Buffer) => Promise<{ text: string }>);
-  const parsed = await pdfParse(fileBuffer);
-  return parsed.text || "";
+  try {
+    const pdfParseModule = require("pdf-parse") as {
+      PDFParse: {
+        new (options: { data: Uint8Array }): {
+          getText: () => Promise<{ text: string }>;
+          destroy: () => Promise<void>;
+        };
+        setWorker?: (workerPath: string) => string;
+      };
+    };
+
+    if (!isPdfWorkerConfigured && pdfParseModule.PDFParse.setWorker) {
+      const workerPath = path.join(
+        process.cwd(),
+        "node_modules",
+        "pdfjs-dist",
+        "legacy",
+        "build",
+        "pdf.worker.mjs"
+      );
+
+      try {
+        pdfParseModule.PDFParse.setWorker(pathToFileURL(workerPath).href);
+        isPdfWorkerConfigured = true;
+      } catch (workerError) {
+        console.warn("PDF worker setup failed; falling back to inline parsing:", workerError);
+      }
+    }
+
+    const parser = new pdfParseModule.PDFParse({ data: new Uint8Array(fileBuffer) });
+    const parsed = await parser.getText();
+    await parser.destroy();
+    return parsed.text || "";
+  } catch (error) {
+    console.error("Failed to parse PDF resume text:", error);
+    return "";
+  }
 }
 
 export async function extractResumeTextFromPath(resumePath: string): Promise<string> {
   const absolutePath = path.join(process.cwd(), "public", resumePath.replace(/^\//, ""));
-  const fileBuffer = await fs.readFile(absolutePath);
+  let fileBuffer: Buffer;
+
+  try {
+    fileBuffer = await fs.readFile(absolutePath);
+  } catch (error) {
+    console.warn("Resume file is missing or unreadable:", absolutePath, error);
+    return "";
+  }
+
   const extension = path.extname(absolutePath).toLowerCase();
 
   if (extension === ".pdf") {

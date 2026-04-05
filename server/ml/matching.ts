@@ -15,6 +15,15 @@ const LEVEL_RANK: Record<ProficiencyLevel, number> = {
 const SKILL_ALIASES: Record<string, string> = {
   reactjs: "react",
   "react.js": "react",
+  "full stack": "fullstack",
+  "full-stack": "fullstack",
+  fullstackdeveloper: "fullstack",
+  "front end": "frontend",
+  "front-end": "frontend",
+  frontenddeveloper: "frontend",
+  "back end": "backend",
+  "back-end": "backend",
+  backenddeveloper: "backend",
   js: "javascript",
   ts: "typescript",
   nodejs: "node",
@@ -24,14 +33,16 @@ const SKILL_ALIASES: Record<string, string> = {
 const DECIMAL_TWO_DP = 100;
 
 const SCORE_WEIGHTS = {
-  required: 0.55,
-  optional: 0.12,
-  education: 0.18,
-  experience: 0.1,
-  category: 0.05,
+  required: 0.42,
+  optional: 0.1,
+  education: 0.14,
+  experience: 0.08,
+  category: 0.1,
+  textSkill: 0.16,
 } as const;
 
-const OPTIONAL_EMPTY_BASELINE = 75;
+const REQUIRED_EMPTY_BASELINE = 55;
+const OPTIONAL_EMPTY_BASELINE = 70;
 const MAX_REQUIRED_MISSING_PENALTY = 24;
 const REQUIRED_MISSING_PENALTY_PER_SKILL = 6;
 
@@ -42,6 +53,7 @@ type ScoreBreakdown = {
   educationScore: number;
   experienceScore: number;
   categoryAlignmentScore: number;
+  textSkillAlignmentScore: number;
   missingRequiredPenalty: number;
   matchedRequiredSkills: string[];
   matchedOptionalSkills: string[];
@@ -100,17 +112,21 @@ function getPostSkillSets(post: PostWithSkills): {
   required: Array<{ name: string; level: ProficiencyLevel | null }>;
   optional: Array<{ name: string; level: ProficiencyLevel | null }>;
 } {
-  const required: Array<{ name: string; level: ProficiencyLevel | null }> = post.requiredSkills.map((item) => ({
+  const requiredSkills = Array.isArray(post.requiredSkills) ? post.requiredSkills : [];
+  const optionalSkills = Array.isArray(post.optionalSkills) ? post.optionalSkills : [];
+  const postSkills = Array.isArray(post.postSkills) ? post.postSkills : [];
+
+  const required: Array<{ name: string; level: ProficiencyLevel | null }> = requiredSkills.map((item) => ({
     name: normalizeSkillName(item.skillName),
     level: item.proficiencyLevel,
   }));
 
-  const optional: Array<{ name: string; level: ProficiencyLevel | null }> = post.optionalSkills.map((item) => ({
+  const optional: Array<{ name: string; level: ProficiencyLevel | null }> = optionalSkills.map((item) => ({
     name: normalizeSkillName(item.skillName),
     level: item.proficiencyLevel,
   }));
 
-  for (const item of post.postSkills) {
+  for (const item of postSkills) {
     const normalized = normalizeSkillName(item.skill.name);
     if (item.required) {
       if (!required.some((skill) => skill.name === normalized)) {
@@ -219,6 +235,11 @@ function computeExperienceScore(student: StudentWithSignals): number {
 function inferStudentCategoryTrack(
   student: StudentWithSignals
 ): InternshipCategory | null {
+  const externalHint = (student as any).aiTrackHint as InternshipCategory | null | undefined;
+  if (externalHint === "COMPUTING" || externalHint === "BUSINESS" || externalHint === "ENGINEERING") {
+    return externalHint;
+  }
+
   const text = `${student.department} ${student.degreeType}`.toLowerCase();
 
   if (
@@ -267,6 +288,39 @@ function computeCategoryAlignmentScore(
   return 40;
 }
 
+function getPostTextBlob(post: PostWithSkills): string {
+  return `${post.title} ${post.description} ${post.responsibilities ?? ""} ${
+    post.keyRequirements ?? ""
+  } ${post.techStack ?? ""}`
+    .toLowerCase()
+    .trim();
+}
+
+function computeTextSkillAlignmentScore(
+  studentSkillMap: Map<string, ProficiencyLevel | null>,
+  post: PostWithSkills
+): number {
+  const studentSkills = Array.from(studentSkillMap.keys());
+  if (!studentSkills.length) return 50;
+
+  const textBlob = getPostTextBlob(post);
+  if (!textBlob) return 35;
+
+  let matched = 0;
+  for (const skill of studentSkills) {
+    const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`(^|[^a-z0-9+.#-])${escaped}([^a-z0-9+.#-]|$)`);
+    if (pattern.test(textBlob)) {
+      matched += 1;
+    }
+  }
+
+  if (matched === 0) return 20;
+
+  const ratio = matched / Math.max(studentSkills.length, 1);
+  return toTwoDecimals(clamp(35 + ratio * 65, 0, 100));
+}
+
 function computeRequiredMissingPenalty(missingCount: number): number {
   return clamp(
     missingCount * REQUIRED_MISSING_PENALTY_PER_SKILL,
@@ -281,6 +335,7 @@ function computeReasonText(
   educationScore: number,
   experienceScore: number,
   categoryAlignmentScore: number,
+  textSkillAlignmentScore: number,
   missingRequiredPenalty: number,
   matchedRequired: string[],
   missingRequired: string[]
@@ -291,7 +346,7 @@ function computeReasonText(
     `Required skills: ${requiredScore.toFixed(1)}%, Optional skills: ${optionalScore.toFixed(1)}%`
   );
   highlights.push(
-    `Education: ${educationScore.toFixed(1)}%, Experience signal: ${experienceScore.toFixed(1)}%, Category alignment: ${categoryAlignmentScore.toFixed(1)}%`
+    `Education: ${educationScore.toFixed(1)}%, Experience signal: ${experienceScore.toFixed(1)}%, Category alignment: ${categoryAlignmentScore.toFixed(1)}%, Text/skill alignment: ${textSkillAlignmentScore.toFixed(1)}%`
   );
 
   if (missingRequiredPenalty > 0) {
@@ -316,7 +371,11 @@ export function calculateMatchScore(
   const { required, optional } = getPostSkillSets(post);
   const studentSkillMap = getStudentSkillMap(student);
 
-  const requiredResult = computeSkillScore(required, studentSkillMap);
+  const requiredResult = computeSkillScore(
+    required,
+    studentSkillMap,
+    REQUIRED_EMPTY_BASELINE
+  );
   const optionalResult = computeSkillScore(
     optional,
     studentSkillMap,
@@ -325,6 +384,10 @@ export function calculateMatchScore(
   const educationScore = computeEducationScore(student, post);
   const experienceScore = computeExperienceScore(student);
   const categoryAlignmentScore = computeCategoryAlignmentScore(student, post);
+  const textSkillAlignmentScore = computeTextSkillAlignmentScore(
+    studentSkillMap,
+    post
+  );
   const missingRequiredPenalty = computeRequiredMissingPenalty(
     requiredResult.missing.length
   );
@@ -334,13 +397,17 @@ export function calculateMatchScore(
     optionalResult.score * SCORE_WEIGHTS.optional +
     educationScore * SCORE_WEIGHTS.education +
     experienceScore * SCORE_WEIGHTS.experience +
-    categoryAlignmentScore * SCORE_WEIGHTS.category -
+    categoryAlignmentScore * SCORE_WEIGHTS.category +
+    textSkillAlignmentScore * SCORE_WEIGHTS.textSkill -
     missingRequiredPenalty;
 
   const overallScore = toTwoDecimals(clamp(overall, 0, 100));
   const isRecommended =
-    overallScore >= 68 &&
-    (required.length === 0 || requiredResult.score >= 60) &&
+    overallScore >= 70 &&
+    categoryAlignmentScore >= 55 &&
+    (required.length === 0
+      ? textSkillAlignmentScore >= 45
+      : requiredResult.score >= 60) &&
     requiredResult.missing.length <= 2;
 
   return {
@@ -350,6 +417,7 @@ export function calculateMatchScore(
     educationScore,
     experienceScore,
     categoryAlignmentScore,
+    textSkillAlignmentScore,
     missingRequiredPenalty,
     matchedRequiredSkills: requiredResult.matched,
     matchedOptionalSkills: optionalResult.matched,
@@ -361,6 +429,7 @@ export function calculateMatchScore(
       educationScore,
       experienceScore,
       categoryAlignmentScore,
+      textSkillAlignmentScore,
       missingRequiredPenalty,
       requiredResult.matched,
       requiredResult.missing

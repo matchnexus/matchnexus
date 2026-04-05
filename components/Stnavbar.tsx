@@ -18,7 +18,7 @@ export default function CompanyNavbar() {
   const tabs = [
     { name: "jobs", href: "/auth/student/jobs" },
     { name: "Profile", href: "/auth/student/user" },
-    { name: "suggesion", href: "#" },
+    { name: "suggestions", href: "/auth/student/suggestions" },
     { name: "courses", href: "#" },
       { name: "applications", href: "/auth/student/applications" }
   ];
