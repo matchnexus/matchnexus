@@ -21,6 +21,7 @@ import {
   HiX,
   HiLightningBolt,
   HiFingerPrint,
+  HiCamera,
 } from "react-icons/hi";
 import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
 import toast from "react-hot-toast";
@@ -42,6 +43,7 @@ export default function UserFriendlyProfile() {
     github: "",
     linkedin: "",
     cvFile: null as File | null,
+    photoFile: null as File | null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,6 +54,10 @@ export default function UserFriendlyProfile() {
   const [existingResumePath, setExistingResumePath] = useState<string | null>(
     null,
   );
+  // 1. Add ref & state
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,10 +81,16 @@ export default function UserFriendlyProfile() {
           github: student?.githubLink || "",
           linkedin: student?.linkedinLink || "",
           cvFile: null,
+          photoFile: null
         });
 
         if (student?.skills) {
           setSelectedSkills(student.skills.map((s: any) => s.skill.name));
+        }
+
+        // 2. In fetchData(), after setting form state:
+        if (student?.profilePhotoUrl) {
+          setExistingPhotoUrl(student.profilePhotoUrl);
         }
 
         const latestResume = student?.resumes?.[0];
@@ -120,6 +132,16 @@ export default function UserFriendlyProfile() {
         return newErrors;
       });
     }
+  };
+
+  // 3. Add handler
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    setForm((prev) => ({ ...prev, photoFile: file }));
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const validateForm = () => {
@@ -165,6 +187,10 @@ export default function UserFriendlyProfile() {
       if (form.grade) formData.append("grade", form.grade);
       if (form.github) formData.append("github", form.github);
       if (form.linkedin) formData.append("linkedin", form.linkedin);
+
+      if (form.photoFile) {
+        formData.append("photoFile", form.photoFile);
+      }
 
       formData.append("skills", JSON.stringify(selectedSkills));
 
@@ -246,7 +272,6 @@ export default function UserFriendlyProfile() {
       {/* --- Main Content --- */}
       <div className="mx-auto mt-16 max-w-7xl px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
           {/* Left Side Card */}
           <div className="lg:col-span-4 space-y-6">
             <motion.div
@@ -259,13 +284,35 @@ export default function UserFriendlyProfile() {
                 <div className="bg-sky-700 h-20 -m-6 mb-0" />
 
                 <div className="flex flex-col items-center -mt-10 relative z-10 px-6 pb-6">
-                  <Avatar
-                    img="https://flowbite.com/docs/images/people/profile-picture-5.jpg"
-                    rounded
-                    size="xl"
-                    className="ring-4 ring-white rounded-full shadow-lg mb-4"
+                  {/* Hidden photo file input */}
+                  {/* Hidden input */}
+                  <input
+                    type="file"
+                    ref={photoInputRef}
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                    accept="image/*"
                   />
 
+                  {/* Clickable avatar */}
+                  <div
+                    className="relative cursor-pointer group mb-4"
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    <Avatar
+                      img={
+                        photoPreview ||
+                        existingPhotoUrl ||
+                        "https://flowbite.com/docs/images/people/profile-picture-5.jpg"
+                      }
+                      rounded
+                      size="lg"
+                      className="ring-4 ring-white rounded-full shadow-lg"
+                    />
+                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <HiCamera className="text-white w-7 h-7" />
+                    </div>
+                  </div>
                   {/* Full Name */}
                   <div className="space-y-1 w-full text-center">
                     <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">
@@ -384,7 +431,6 @@ export default function UserFriendlyProfile() {
               transition={{ delay: 0.1 }}
             >
               <Card className="border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white p-6">
-
                 {/* Section heading — matches Jobs page "Latest Opportunities" style */}
                 <div className="mb-8 pb-6 border-b border-gray-100">
                   <h2 className="text-3xl font-bold text-gray-900">
@@ -397,7 +443,6 @@ export default function UserFriendlyProfile() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
-
                   {/* Institute */}
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
@@ -472,7 +517,9 @@ export default function UserFriendlyProfile() {
                       }}
                     >
                       <option value="Computing">Computing</option>
-                      <option value="Business Management">Business Management</option>
+                      <option value="Business Management">
+                        Business Management
+                      </option>
                       <option value="Marketing">Marketing</option>
                       <option value="Accounting">Accounting</option>
                     </Select>
@@ -617,7 +664,9 @@ export default function UserFriendlyProfile() {
                                 onClick={() => {
                                   setSelectedSkills(
                                     isSelected
-                                      ? selectedSkills.filter((s) => s !== skill)
+                                      ? selectedSkills.filter(
+                                          (s) => s !== skill,
+                                        )
                                       : [...selectedSkills, skill],
                                   );
                                 }}
@@ -697,7 +746,6 @@ export default function UserFriendlyProfile() {
                     </button>
                   </div>
                 </div>
-
               </Card>
             </motion.div>
           </div>
