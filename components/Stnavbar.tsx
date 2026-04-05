@@ -16,11 +16,11 @@ export default function CompanyNavbar() {
   }, []);
 
   const tabs = [
-    { name: "jobs", href: "/auth/student/jobs" },
+    { name: "Jobs", href: "/auth/student/jobs" },
     { name: "Profile", href: "/auth/student/user" },
-    { name: "suggesion", href: "#" },
-    { name: "courses", href: "#" },
-      { name: "applications", href: "/auth/student/applications" }
+    { name: "Suggesion", href: "#" },
+    { name: "Courses", href: "#" },
+      { name: "Applications", href: "/auth/student/applications" }
   ];
 
   const baseLink =
