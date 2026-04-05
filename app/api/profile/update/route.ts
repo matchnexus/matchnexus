@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { recomputeStudentFeedRecommendations } from "@/server/ml/matching";
 
 export async function PUT(req: NextRequest) {
   try {
@@ -125,6 +126,10 @@ export async function PUT(req: NextRequest) {
 
       return { student: updatedStudent, resume: resumeRecord };
     });
+
+    if (result.resume) {
+      await recomputeStudentFeedRecommendations(result.student.id);
+    }
 
     return NextResponse.json(
       { message: "Profile updated successfully", data: result },
