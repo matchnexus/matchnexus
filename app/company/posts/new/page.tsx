@@ -3,30 +3,43 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const DURATION_YEAR_OPTIONS = Array.from({ length: 5 }, (_, index) => String(index + 1));
+const DURATION_MONTH_OPTIONS = Array.from({ length: 24 }, (_, index) => String(index + 1));
+
 export default function CreatePostPage() {
   const router = useRouter();
   const [companyId, setCompanyId] = useState("");
   const [formData, setFormData] = useState({
     title: "",
+    category: "",
     description: "",
     responsibilities: "",
+    keyRequirements: "",
+    techStack: "",
     location: "",
     workType: "",
-    durationMonths: "",
-    stipendAmount: "",
     applicationDeadline: "",
-    requiredSkills: "",
-    optionalSkills: "",
   });
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const canSubmit =
-    formData.title.trim() &&
-    formData.description.trim() &&
-    formData.applicationDeadline;
+  const [durationUnit, setDurationUnit] = useState<"MONTHS" | "YEARS">("MONTHS");
+  const [durationValue, setDurationValue] = useState("");
+  const todayDate = getTodayDateString();
+  const totalDurationMonths = durationValue
+    ? durationUnit === "YEARS"
+      ? Number(durationValue) * 12
+      : Number(durationValue)
+    : 0;
 
   useEffect(() => {
     const storedCompanyId = localStorage.getItem("companyId") || "";
@@ -52,6 +65,12 @@ export default function CreatePostPage() {
       return;
     }
 
+    if (formData.applicationDeadline && formData.applicationDeadline < todayDate) {
+      setIsError(true);
+      setMessage("Application deadline cannot be in the past.");
+      return;
+    }
+
     try {
       setLoading(true);
       setIsError(false);
@@ -64,27 +83,29 @@ export default function CreatePostPage() {
         body: JSON.stringify({
           companyId,
           title: formData.title,
+          category: formData.category,
           description: formData.description,
+          keyRequirements: formData.keyRequirements,
+          techStack: formData.techStack,
           responsibilities: formData.responsibilities,
           location: formData.location,
           workType: formData.workType || null,
-          durationMonths: formData.durationMonths
-            ? Number(formData.durationMonths)
-            : null,
-          stipendAmount: formData.stipendAmount
-            ? Number(formData.stipendAmount)
-            : null,
+          durationMonths: totalDurationMonths > 0 ? totalDurationMonths : null,
           applicationDeadline: formData.applicationDeadline,
-          requiredSkills: formData.requiredSkills,
-          optionalSkills: formData.optionalSkills,
         }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { error?: string; message?: string } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
 
       if (!res.ok) {
         setIsError(true);
-        setMessage(data.error || "Failed to create post");
+        setMessage(data.error || data.message || "Failed to create post");
         return;
       }
 
@@ -93,32 +114,33 @@ export default function CreatePostPage() {
 
       setFormData({
         title: "",
+        category: "",
         description: "",
         responsibilities: "",
+        keyRequirements: "",
+        techStack: "",
         location: "",
         workType: "",
-        durationMonths: "",
-        stipendAmount: "",
         applicationDeadline: "",
-        requiredSkills: "",
-        optionalSkills: "",
       });
+      setDurationUnit("MONTHS");
+      setDurationValue("");
 
       setTimeout(() => {
         router.push("/company/posts");
       }, 500);
     } catch (error) {
       setIsError(true);
-      setMessage("Something went wrong");
+      setMessage("Network error. Please check the server and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-transparent px-4 py-6 md:py-8">
       <div className="mx-auto max-w-4xl space-y-5">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <section className="space-y-4">
               <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Basic Details</h2>
@@ -132,8 +154,22 @@ export default function CreatePostPage() {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="e.g. Frontend Developer Intern"
-                  required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Category</label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">Select category</option>
+                  <option value="COMPUTING">IT</option>
+                  <option value="BUSINESS">Business</option>
+                  <option value="ENGINEERING">Engineering</option>
+                </select>
               </div>
 
               <div className="space-y-2">
@@ -145,7 +181,6 @@ export default function CreatePostPage() {
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Describe the internship role, team, and expected outcomes"
                   rows={4}
-                  required
                 />
               </div>
 
@@ -156,10 +191,35 @@ export default function CreatePostPage() {
                   value={formData.responsibilities}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="List key tasks and responsibilities"
+                  placeholder="Add responsibilities (press Enter for new line)"
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Key Requirements</label>
+                <textarea
+                  name="keyRequirements"
+                  value={formData.keyRequirements}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Add key requirements (press Enter for new line)"
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Tech Stack</label>
+                <textarea
+                  name="techStack"
+                  value={formData.techStack}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="Add tech stack (press Enter for new line)"
                   rows={3}
                 />
               </div>
+
             </section>
 
             <section className="space-y-4">
@@ -194,29 +254,40 @@ export default function CreatePostPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Duration (Months)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    name="durationMonths"
-                    value={formData.durationMonths}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g. 6"
-                  />
-                </div>
+                  <label className="text-sm font-semibold text-slate-700">Duration</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={durationUnit}
+                      onChange={(e) => {
+                        setDurationUnit(e.target.value as "MONTHS" | "YEARS");
+                        setDurationValue("");
+                      }}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="MONTHS">Months</option>
+                      <option value="YEARS">Years</option>
+                    </select>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-700">Stipend</label>
-                  <input
-                    type="number"
-                    min={0}
-                    name="stipendAmount"
-                    value={formData.stipendAmount}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g. 50000"
-                  />
+                    <select
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="">Select value</option>
+                      {(durationUnit === "YEARS"
+                        ? DURATION_YEAR_OPTIONS
+                        : DURATION_MONTH_OPTIONS
+                      ).map((option) => (
+                        <option key={option} value={option}>
+                          {option} {durationUnit === "YEARS" ? "Year" : "Month"}
+                          {option === "1" ? "" : "s"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Total duration: {totalDurationMonths || 0} month(s)
+                  </p>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -226,58 +297,31 @@ export default function CreatePostPage() {
                     name="applicationDeadline"
                     value={formData.applicationDeadline}
                     onChange={handleChange}
+                    min={todayDate}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
                   />
                 </div>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-indigo-600">Skills</h2>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Required Skills</label>
-                <input
-                  type="text"
-                  name="requiredSkills"
-                  value={formData.requiredSkills}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="React, TypeScript, Git"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Optional Skills</label>
-                <input
-                  type="text"
-                  name="optionalSkills"
-                  value={formData.optionalSkills}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="Next.js, Tailwind, Node.js"
-                />
               </div>
             </section>
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 md:flex-row md:justify-end">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
                   setFormData({
                     title: "",
+                    category: "",
                     description: "",
                     responsibilities: "",
+                    keyRequirements: "",
+                    techStack: "",
                     location: "",
                     workType: "",
-                    durationMonths: "",
-                    stipendAmount: "",
                     applicationDeadline: "",
-                    requiredSkills: "",
-                    optionalSkills: "",
-                  })
-                }
+                  });
+                  setDurationUnit("MONTHS");
+                  setDurationValue("");
+                }}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Clear Form
@@ -285,7 +329,7 @@ export default function CreatePostPage() {
 
               <button
                 type="submit"
-                disabled={loading || !canSubmit}
+                disabled={loading}
                 className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {loading ? "Creating..." : "Create Internship Post"}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { validateStrongPassword } from "@/lib/password-policy";
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,11 @@ export async function POST(req: Request) {
         { error: "Email and password are required" },
         { status: 400 }
       );
+    }
+
+    const passwordError = validateStrongPassword(String(password));
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     const emailDomain = email.split("@")[1]?.toLowerCase();
@@ -79,6 +85,11 @@ export async function POST(req: Request) {
       company.verificationStatus = "VERIFIED";
     }
 
+    const profile = await prisma.companyProfile.findUnique({
+      where: { companyId: company.id },
+      select: { logoUrl: true },
+    });
+
     return NextResponse.json(
       {
         message: "Login successful",
@@ -88,6 +99,7 @@ export async function POST(req: Request) {
           corporateEmail: company.corporateEmail,
           isVerified: company.isVerified,
           verificationStatus: company.verificationStatus,
+          logoUrl: profile?.logoUrl || "",
         },
       },
       { status: 200 }

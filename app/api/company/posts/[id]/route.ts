@@ -3,6 +3,77 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const toNullableString = (value: unknown) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const normalizeCategory = (value: unknown): "COMPUTING" | "BUSINESS" | "ENGINEERING" | null => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized === "IT" || normalized === "COMPUTING") {
+    return "COMPUTING";
+  }
+  if (normalized === "BUSINESS") {
+    return "BUSINESS";
+  }
+  if (normalized === "ENGINEERING") {
+    return "ENGINEERING";
+  }
+
+  return null;
+};
+
+const appendMetadataToDescription = (
+  baseDescription: string,
+  category: string | null,
+  keyRequirements: string | null,
+  techStack: string | null
+) => {
+  const sections = [baseDescription];
+
+  if (category) {
+    sections.push(`Category:\n${category}`);
+  }
+  if (keyRequirements) {
+    sections.push(`Key Requirements:\n${keyRequirements}`);
+  }
+  if (techStack) {
+    sections.push(`Tech Stack:\n${techStack}`);
+  }
+
+  return sections.filter(Boolean).join("\n\n");
+};
+
+const hasPostMetadataSchemaMismatch = (error: unknown) => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const prismaError = error as { code?: string; message?: string };
+  if (prismaError.code === "P2022") {
+    return true;
+  }
+
+  const message = prismaError.message || "";
+  return (
+    message.includes("Unknown arg `category`") ||
+    message.includes("Unknown arg `keyRequirements`") ||
+    message.includes("Unknown arg `techStack`")
+  );
+};
+
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
@@ -45,15 +116,15 @@ export async function PUT(
 
     const {
       title,
+      category,
       description,
+      keyRequirements,
+      techStack,
       responsibilities,
       location,
       workType,
       durationMonths,
-      stipendAmount,
       applicationDeadline,
-      requiredSkills,
-      optionalSkills,
     } = body;
 
     const existingPost = await prisma.internshipPost.findUnique({
@@ -67,59 +138,47 @@ export async function PUT(
       );
     }
 
-    await prisma.internshipPost.update({
-      where: { id: postId },
-      data: {
-        title,
-        description,
-        responsibilities,
-        location,
-        workType,
-        durationMonths,
-        stipendAmount,
-        applicationDeadline: new Date(applicationDeadline),
-      },
-    });
+    const normalizedDescription = description?.trim() || "";
+    const normalizedCategory = normalizeCategory(category);
+    const normalizedKeyRequirements = toNullableString(keyRequirements);
+    const normalizedTechStack = toNullableString(techStack);
 
-    await prisma.postRequiredSkill.deleteMany({
-      where: { postId },
-    });
+    const commonData = {
+      title,
+      responsibilities,
+      location,
+      workType,
+      durationMonths,
+      applicationDeadline: new Date(applicationDeadline),
+    };
 
-    await prisma.postOptionalSkill.deleteMany({
-      where: { postId },
-    });
-
-    const requiredSkillsArray = requiredSkills
-      ? requiredSkills
-          .split(",")
-          .map((skill: string) => skill.trim())
-          .filter((skill: string) => skill.length > 0)
-      : [];
-
-    const optionalSkillsArray = optionalSkills
-      ? optionalSkills
-          .split(",")
-          .map((skill: string) => skill.trim())
-          .filter((skill: string) => skill.length > 0)
-      : [];
-
-    if (requiredSkillsArray.length > 0) {
-      await prisma.postRequiredSkill.createMany({
-        data: requiredSkillsArray.map((skillName: string) => ({
-          postId,
-          skillName,
-          proficiencyLevel: "INTERMEDIATE",
-        })),
+    try {
+      await prisma.internshipPost.update({
+        where: { id: postId },
+        data: {
+          ...commonData,
+          category: normalizedCategory,
+          description: normalizedDescription,
+          keyRequirements: normalizedKeyRequirements,
+          techStack: normalizedTechStack,
+        },
       });
-    }
+    } catch (updateError) {
+      if (!hasPostMetadataSchemaMismatch(updateError)) {
+        throw updateError;
+      }
 
-    if (optionalSkillsArray.length > 0) {
-      await prisma.postOptionalSkill.createMany({
-        data: optionalSkillsArray.map((skillName: string) => ({
-          postId,
-          skillName,
-          proficiencyLevel: "BEGINNER",
-        })),
+      await prisma.internshipPost.update({
+        where: { id: postId },
+        data: {
+          ...commonData,
+          description: appendMetadataToDescription(
+            normalizedDescription,
+            normalizedCategory,
+            normalizedKeyRequirements,
+            normalizedTechStack
+          ),
+        },
       });
     }
 

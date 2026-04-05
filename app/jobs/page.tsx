@@ -1,13 +1,14 @@
 "use client";
 
 import { Badge, Card, Pagination } from "flowbite-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   HiSearch,
   HiOutlineLocationMarker,
   HiOutlineBriefcase,
 } from "react-icons/hi";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 // --- Dummy Data (Total 18 jobs for 2 pages) ---
@@ -37,17 +38,63 @@ const allJobs = Array.from({ length: 18 }, (_, i) => ({
 
 export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const jobsPerPage = 9;
+  const searchParams = useSearchParams();
+  const query = (searchText || searchParams.get("query") || "").trim().toLowerCase();
+  const category = (selectedCategory || searchParams.get("category") || "").trim().toLowerCase();
+  const location = (selectedLocation || searchParams.get("location") || "").trim().toLowerCase();
 
   const { data: session } = useSession();
 
   console.log("ddddddddd",session?.user.id);
   console.log(session?.user.role);
 
+  useEffect(() => {
+    setSearchText(searchParams.get("query") || "");
+    setSelectedCategory(searchParams.get("category") || "");
+    setSelectedLocation(searchParams.get("location") || "");
+  }, [searchParams]);
+
+  const filteredJobs = useMemo(() => {
+    return allJobs.filter((job) => {
+      const matchesQuery =
+        !query ||
+        job.title.toLowerCase().includes(query) ||
+        job.company.toLowerCase().includes(query) ||
+        job.type.toLowerCase().includes(query);
+
+      const matchesCategory =
+        !category ||
+        job.type.toLowerCase().includes(category) ||
+        job.title.toLowerCase().includes(category);
+
+      const matchesLocation =
+        !location || job.location.toLowerCase().includes(location);
+
+      return matchesQuery && matchesCategory && matchesLocation;
+    });
+  }, [query, category, location]);
+
   // Pagination Logic
   const onPageChange = (page: number) => setCurrentPage(page);
   const startIndex = (currentPage - 1) * jobsPerPage;
-  const selectedJobs = allJobs.slice(startIndex, startIndex + jobsPerPage);
+  const selectedJobs = filteredJobs.slice(startIndex, startIndex + jobsPerPage);
+
+  const hasFilters = Boolean(query || category || location);
+
+  const handleSearchJobs = () => {
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setSearchText("");
+    setSelectedCategory("");
+    setSelectedLocation("");
+    setCurrentPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-10 font-sans">
@@ -68,23 +115,63 @@ export default function JobsPage() {
               <input
                 type="text"
                 placeholder="Job title, keywords..."
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
                 className="w-full border-none focus:ring-0 text-gray-700 font-medium text-lg placeholder:text-gray-300"
               />
             </div>
             <div className="hidden h-10 w-px bg-gray-200 md:block"></div>
             <div className="flex w-full items-center px-5 md:w-1/4">
               <HiOutlineBriefcase className="mr-2 text-2xl text-gray-400" />
-              <select className="w-full border-none bg-transparent focus:ring-0 text-gray-600 font-bold uppercase text-xs">
+              <select
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                className="w-full border-none bg-transparent focus:ring-0 text-gray-600 font-bold uppercase text-xs"
+              >
                 <option>All Categories</option>
                 <option>Computing</option>
                 <option>Business</option>
                 <option>Engineering</option>
               </select>
             </div>
-            <button className="w-full rounded-2xl bg-lime-500 px-10 py-4 font-black text-white transition-all hover:bg-lime-600 md:w-auto md:rounded-full shadow-lg shadow-lime-500/30">
+            <button
+              type="button"
+              onClick={handleSearchJobs}
+              className="w-full rounded-2xl bg-lime-500 px-10 py-4 font-black text-white transition-all hover:bg-lime-600 md:w-auto md:rounded-full shadow-lg shadow-lime-500/30"
+            >
               SEARCH
             </button>
           </div>
+
+          {hasFilters && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <span className="text-xs font-black uppercase tracking-widest text-blue-100">
+                Filtered by
+              </span>
+              {query && (
+                <Badge color="info" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">
+                  {query}
+                </Badge>
+              )}
+              {category && (
+                <Badge color="success" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">
+                  {category}
+                </Badge>
+              )}
+              {location && (
+                <Badge color="warning" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">
+                  {location}
+                </Badge>
+              )}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-full border border-white/25 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white transition hover:bg-white/10"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -96,7 +183,7 @@ export default function JobsPage() {
               Latest Opportunities
             </h2>
             <p className="text-sm font-bold text-gray-400 uppercase mt-1">
-              Showing {selectedJobs.length} of {allJobs.length} available roles
+              Showing {selectedJobs.length} of {filteredJobs.length} matching roles
             </p>
           </div>
         </div>
@@ -152,7 +239,7 @@ export default function JobsPage() {
         <div className="mt-16 flex items-center justify-center">
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.ceil(allJobs.length / jobsPerPage)}
+            totalPages={Math.max(1, Math.ceil(filteredJobs.length / jobsPerPage))}
             onPageChange={onPageChange}
             showIcons
             className="font-bold"

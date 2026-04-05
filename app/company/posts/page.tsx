@@ -14,7 +14,10 @@ type Post = {
   id: string;
   title: string;
   description: string;
+  category?: string | null;
   responsibilities?: string | null;
+  keyRequirements?: string | null;
+  techStack?: string | null;
   location?: string | null;
   workType?: string | null;
   durationMonths?: number | null;
@@ -23,6 +26,57 @@ type Post = {
   status: string;
   requiredSkills: Skill[];
   optionalSkills: Skill[];
+};
+
+const splitDescriptionSections = (rawDescription: string) => {
+  const description = rawDescription || "";
+  const labels = ["Category", "Qualifications", "Experience", "Key Requirements", "Tech Stack"];
+
+  const extractSection = (label: string) => {
+    const marker = `\n\n${label}:\n`;
+    const start = description.indexOf(marker);
+
+    if (start < 0) return "";
+
+    const contentStart = start + marker.length;
+    let contentEnd = description.length;
+
+    labels.forEach((nextLabel) => {
+      const nextMarker = `\n\n${nextLabel}:\n`;
+      const nextIndex = description.indexOf(nextMarker, contentStart);
+      if (nextIndex >= 0 && nextIndex < contentEnd) {
+        contentEnd = nextIndex;
+      }
+    });
+
+    return description.slice(contentStart, contentEnd).trim();
+  };
+
+  const markerIndexes = labels
+    .map((label) => description.indexOf(`\n\n${label}:\n`))
+    .filter((index) => index >= 0);
+  const firstMarkerIndex = markerIndexes.length > 0 ? Math.min(...markerIndexes) : -1;
+
+  const coreDescription = (firstMarkerIndex >= 0
+    ? description.slice(0, firstMarkerIndex)
+    : description
+  ).trim();
+
+  return {
+    coreDescription,
+    qualifications: extractSection("Qualifications"),
+    keyRequirements: extractSection("Key Requirements"),
+    techStack: extractSection("Tech Stack"),
+  };
+};
+
+const toLineItems = (value?: string | null) => {
+  if (!value) return [];
+
+  return value
+    .split(/\r?\n|\*/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 export default function CompanyPostsPage() {
@@ -36,24 +90,6 @@ export default function CompanyPostsPage() {
   const [statusUpdatingId, setStatusUpdatingId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return "bg-green-100 text-green-700";
-      case "DRAFT":
-        return "bg-amber-100 text-amber-700";
-      case "CLOSED":
-        return "bg-gray-200 text-gray-700";
-      default:
-        return "bg-blue-100 text-blue-700";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    if (status === "ACTIVE") return "PUBLISHED";
-    return status;
-  };
 
   const fetchPosts = async () => {
     setMessage("");
@@ -170,9 +206,15 @@ export default function CompanyPostsPage() {
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
+      const { coreDescription, qualifications, keyRequirements, techStack } = splitDescriptionSections(
+        post.description
+      );
       const matchesSearch =
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchTerm.toLowerCase());
+        coreDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        qualifications.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        keyRequirements.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        techStack.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === "ALL" || post.status === statusFilter;
@@ -182,7 +224,7 @@ export default function CompanyPostsPage() {
   }, [posts, searchTerm, statusFilter]);
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-6 md:py-8">
+    <div className="min-h-screen bg-transparent px-4 py-6 md:py-8">
       <div className="mx-auto max-w-6xl space-y-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-medium text-gray-600">
@@ -194,12 +236,12 @@ export default function CompanyPostsPage() {
             href="/company/posts/new"
             className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            Create Post
+            Publish Post
           </Link>
         </div>
 
         {!loading && posts.length > 0 && (
-          <div className="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm md:grid-cols-3">
+          <div className="grid gap-3 rounded-xl border border-blue-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm md:grid-cols-3">
             <input
               type="text"
               value={searchTerm}
@@ -236,7 +278,7 @@ export default function CompanyPostsPage() {
         {loading && (
           <div className="space-y-4">
             {Array.from({ length: 2 }).map((_, index) => (
-              <div key={index} className="animate-pulse rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div key={index} className="animate-pulse rounded-xl border border-blue-100 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
                 <div className="h-6 w-1/3 rounded bg-gray-200" />
                 <div className="mt-4 h-4 w-full rounded bg-gray-100" />
                 <div className="mt-2 h-4 w-5/6 rounded bg-gray-100" />
@@ -247,7 +289,7 @@ export default function CompanyPostsPage() {
         )}
 
         {!loading && posts.length === 0 && !isError && (
-          <div className="rounded-xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+          <div className="rounded-xl border border-blue-100 bg-white/80 p-10 text-center shadow-sm backdrop-blur-sm">
             <h2 className="text-xl font-bold text-gray-900">No posts yet</h2>
             <p className="mt-2 text-sm text-gray-600">Create your first internship post to start receiving applications.</p>
             <Link
@@ -260,7 +302,7 @@ export default function CompanyPostsPage() {
         )}
 
         {!loading && posts.length > 0 && filteredPosts.length === 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="rounded-xl border border-blue-100 bg-white/80 p-8 text-center shadow-sm backdrop-blur-sm">
             <h2 className="text-lg font-bold text-gray-900">No matching posts</h2>
             <p className="mt-2 text-sm text-gray-600">Try a different keyword or change the status filter.</p>
           </div>
@@ -269,25 +311,26 @@ export default function CompanyPostsPage() {
         {!loading && filteredPosts.length > 0 && (
           <div className="space-y-4">
           {filteredPosts.map((post) => (
+            (() => {
+              const details = splitDescriptionSections(post.description);
+              const displayedKeyRequirements = post.keyRequirements?.trim() || details.keyRequirements;
+              const displayedTechStack = post.techStack?.trim() || details.techStack;
+              const responsibilityItems = toLineItems(post.responsibilities);
+              const keyRequirementItems = toLineItems(displayedKeyRequirements);
+              const techStackItems = toLineItems(displayedTechStack);
+              return (
             <div
               key={post.id}
-              className={`rounded-xl border p-6 shadow-sm transition ${
+              className={`rounded-xl border-2 border-black p-6 shadow-sm transition ${
                 updatedPostId && post.id === updatedPostId
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 bg-white"
+                  ? "bg-green-50 ring-2 ring-green-400/70"
+                  : "bg-white/80"
               }`}
             >
               <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">{post.title}</h2>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(
-                        post.status
-                      )}`}
-                    >
-                      {getStatusLabel(post.status)}
-                    </span>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                       Deadline: {new Date(post.applicationDeadline).toLocaleDateString()}
                     </span>
@@ -340,62 +383,59 @@ export default function CompanyPostsPage() {
                   <span className="font-semibold text-gray-900">Duration:</span>{" "}
                   {post.durationMonths ? `${post.durationMonths} months` : "Not specified"}
                 </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Stipend:</span>{" "}
-                  {post.stipendAmount ?? "Not specified"}
-                </p>
               </div>
 
               <div className="mt-4 rounded-lg bg-slate-50 p-4">
                 <h3 className="text-sm font-semibold text-gray-900">Description</h3>
-                <p className="mt-1 text-sm text-gray-700">{post.description}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                  {details.coreDescription || "Not specified"}
+                </p>
               </div>
 
               {post.responsibilities && (
                 <div className="mt-4 rounded-lg bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-gray-900">Responsibilities</h3>
-                  <p className="mt-1 text-sm text-gray-700">{post.responsibilities}</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {responsibilityItems.map((item, index) => (
+                      <li key={`responsibility-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Required Skills</h3>
-                  <div className="flex min-h-9 flex-wrap gap-2">
-                    {post.requiredSkills.length > 0 ? (
-                      post.requiredSkills.map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700"
-                        >
-                          {skill.skillName}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No required skills</p>
-                    )}
-                  </div>
+              {details.qualifications && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Qualifications</h3>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                    {details.qualifications}
+                  </p>
                 </div>
+              )}
 
-                <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-900">Optional Skills</h3>
-                  <div className="flex min-h-9 flex-wrap gap-2">
-                    {post.optionalSkills.length > 0 ? (
-                      post.optionalSkills.map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700"
-                        >
-                          {skill.skillName}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">No optional skills</p>
-                    )}
-                  </div>
+              {displayedKeyRequirements && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Key Requirements</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {keyRequirementItems.map((item, index) => (
+                      <li key={`requirement-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              )}
+
+              {displayedTechStack && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Tech Stack</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {techStackItems.map((item, index) => (
+                      <li key={`tech-item-${post.id}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+              );
+            })()
           ))}
           </div>
         )}
