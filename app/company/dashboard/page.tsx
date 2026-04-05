@@ -3,7 +3,6 @@
 import { Alert, Badge, Card, Spinner } from "flowbite-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -326,6 +325,7 @@ export default function CompanyDashboardPage() {
       </Card>
 
       <Card className="border-0 bg-white/85 shadow-lg backdrop-blur">
+
         {publishedPostId && (
           <Alert color="success" className="mb-4">
             Post published successfully.
@@ -368,103 +368,106 @@ export default function CompanyDashboardPage() {
         )}
 
         <div className="space-y-4">
-          {filteredPosts.map((post) => (
-            (() => {
-              const details = splitDescriptionSections(post.description);
-              const displayedKeyRequirements = post.keyRequirements?.trim() || details.keyRequirements;
-              const displayedTechStack = post.techStack?.trim() || details.techStack;
-              const responsibilityItems = toLineItems(post.responsibilities);
-              const keyRequirementItems = toLineItems(displayedKeyRequirements);
-              const techStackItems = toLineItems(displayedTechStack);
-              return (
-            <Card key={post.id} className="border border-slate-100 bg-white shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-xl font-bold text-slate-800">{post.title}</h3>
-                <div className="flex items-center gap-2">
-                  <Badge color="blue">{post.applicationsCount || 0} Applications</Badge>
-                  <Link
-                    href={`/jobs/${post.id}`}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700"
-                  >
-                    Apply
-                  </Link>
+          {filteredPosts.map((post) => {
+            const details = splitDescriptionSections(post.description);
+            const displayedQualifications = details.qualifications;
+            const displayedKeyRequirements = post.keyRequirements?.trim() || details.keyRequirements;
+            const responsibilityItems = toLineItems(post.responsibilities);
+            const keyRequirementItems = toLineItems(displayedKeyRequirements);
+            const displayedTechStack = post.techStack?.trim() || details.techStack;
+            const techStackItems = toLineItems(displayedTechStack);
+
+            return (
+              <div
+                key={post.id}
+                className="rounded-xl border-2 border-black bg-white/80 p-6 shadow-sm"
+              >
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{post.title}</h3>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        Deadline: {new Date(post.applicationDeadline).toLocaleDateString()}
+                      </span>
+                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {post.applicationsCount || 0} applications
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
-              </div>
 
-              {post.applicationDeadline && (
-                <p className="mt-1 text-xs text-slate-500">
-                  Deadline: {new Date(post.applicationDeadline).toLocaleDateString()}
-                </p>
-              )}
+                <div className="grid gap-3 text-sm text-gray-700 md:grid-cols-2 lg:grid-cols-4">
+                  <p>
+                    <span className="font-semibold text-gray-900">Location:</span>{" "}
+                    {post.location || "Not specified"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Work Type:</span>{" "}
+                    {post.workType || "Not specified"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Duration:</span>{" "}
+                    {post.durationMonths ? `${post.durationMonths} months` : "Not specified"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Category:</span>{" "}
+                    {post.category || "Not specified"}
+                  </p>
+                </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                {post.location && (
-                  <div className="rounded-lg bg-slate-50 p-3">Location: {post.location}</div>
-                )}
-                {post.workType && (
-                  <div className="rounded-lg bg-slate-50 p-3">Work Type: {post.workType}</div>
-                )}
-                {post.durationMonths && (
-                  <div className="rounded-lg bg-slate-50 p-3">
-                    Duration: {post.durationMonths} months
+                <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                  <h4 className="text-sm font-semibold text-gray-900">Description</h4>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                    {details.coreDescription || "Not specified"}
+                  </p>
+                </div>
+
+                {responsibilityItems.length > 0 && (
+                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Responsibilities</h4>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                      {responsibilityItems.map((item, index) => (
+                        <li key={`responsibility-item-${post.id}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
+
+                {displayedQualifications && (
+                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Qualifications</h4>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+                      {displayedQualifications}
+                    </p>
+                  </div>
+                )}
+
+                {keyRequirementItems.length > 0 && (
+                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Key Requirements</h4>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                      {keyRequirementItems.map((item, index) => (
+                        <li key={`requirement-item-${post.id}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {techStackItems.length > 0 && (
+                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Tech Stack</h4>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700">
+                      {techStackItems.map((item, index) => (
+                        <li key={`tech-item-${post.id}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
               </div>
-
-              {details.coreDescription && (
-                <div className="mt-4 rounded-lg bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">Description</h4>
-                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                    {details.coreDescription}
-                  </p>
-                </div>
-              )}
-
-              {post.responsibilities && (
-                <div className="mt-3 rounded-lg bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">Responsibilities</h4>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-                    {responsibilityItems.map((item, index) => (
-                      <li key={`responsibility-item-${post.id}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {details.qualifications && (
-                <div className="mt-3 rounded-lg bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">Qualifications</h4>
-                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                    {details.qualifications}
-                  </p>
-                </div>
-              )}
-
-              {displayedKeyRequirements && (
-                <div className="mt-3 rounded-lg bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">Key Requirements</h4>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-                    {keyRequirementItems.map((item, index) => (
-                      <li key={`requirement-item-${post.id}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {displayedTechStack && (
-                <div className="mt-3 rounded-lg bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold text-slate-800">Tech Stack</h4>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-700">
-                    {techStackItems.map((item, index) => (
-                      <li key={`tech-item-${post.id}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </Card>
-              );
-            })()
-          ))}
+            );
+          })}
         </div>
       </Card>
     </section>
