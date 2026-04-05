@@ -397,7 +397,7 @@ export default function CompanyDashboardPage() {
 
                 </div>
 
-                <div className="grid gap-3 text-sm text-gray-700 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 text-sm text-gray-700 md:grid-cols-2 lg:grid-cols-3">
                   <p>
                     <span className="font-semibold text-gray-900">Location:</span>{" "}
                     {post.location || "Not specified"}
@@ -409,10 +409,6 @@ export default function CompanyDashboardPage() {
                   <p>
                     <span className="font-semibold text-gray-900">Duration:</span>{" "}
                     {post.durationMonths ? `${post.durationMonths} months` : "Not specified"}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-gray-900">Category:</span>{" "}
-                    {post.category || "Not specified"}
                   </p>
                 </div>
 

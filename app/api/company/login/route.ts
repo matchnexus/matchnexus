@@ -85,6 +85,11 @@ export async function POST(req: Request) {
       company.verificationStatus = "VERIFIED";
     }
 
+    const profile = await prisma.companyProfile.findUnique({
+      where: { companyId: company.id },
+      select: { logoUrl: true },
+    });
+
     return NextResponse.json(
       {
         message: "Login successful",
@@ -94,6 +99,7 @@ export async function POST(req: Request) {
           corporateEmail: company.corporateEmail,
           isVerified: company.isVerified,
           verificationStatus: company.verificationStatus,
+          logoUrl: profile?.logoUrl || "",
         },
       },
       { status: 200 }
