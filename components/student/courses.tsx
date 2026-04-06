@@ -201,11 +201,7 @@ export default function StudentCoursesHub() {
           onClose={() => setSchedulingId(null)}
         />
       )}
-    <div className="relative flex flex-col gap-6 overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-slate-50 via-sky-50 to-blue-100 p-5 shadow-xl lg:flex-row lg:p-6">
-      {/* soft background glow */}
-      <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-sky-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 rounded-full bg-blue-200/30 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/2 left-1/3 h-40 w-40 -translate-y-1/2 rounded-full bg-cyan-100/30 blur-3xl" />
+    <div className="relative flex flex-col gap-6 overflow-hidden rounded-[2rem] border border-slate-200 p-5 shadow-sm lg:flex-row lg:p-6" style={{ backgroundColor: "#EDF7F8" }}>
 
       {/* Sidebar */}
       <aside className="relative z-10 flex shrink-0 flex-row gap-2 overflow-x-auto pb-2 lg:w-56 lg:flex-col lg:gap-3 lg:pb-0">
