@@ -82,6 +82,53 @@ export function AdminMatchingView({
 }: Props) {
   const [recommendationView, setRecommendationView] = useState<"table" | "card">("table");
   const [mlView, setMlView] = useState<"table" | "card">("table");
+  const [isRunningMatch, setIsRunningMatch] = useState(false);
+  const [runMessage, setRunMessage] = useState<string | null>(null);
+
+  async function handleRunMatching() {
+    setIsRunningMatch(true);
+    setRunMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/matching/recompute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mode: "all" }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            message?: string;
+            postsProcessed?: number;
+            studentsProcessed?: number;
+            applicationScoresComputed?: number;
+            recommendationScoresComputed?: number;
+            durationMs?: number;
+          }
+        | null;
+
+      if (!response.ok) {
+        setRunMessage(payload?.message ?? "Failed to run matching.");
+        return;
+      }
+
+      const summary =
+        `Matching complete. Posts: ${payload?.postsProcessed ?? 0}, ` +
+        `Students: ${payload?.studentsProcessed ?? 0}, ` +
+        `Application scores: ${payload?.applicationScoresComputed ?? 0}, ` +
+        `Recommendations: ${payload?.recommendationScoresComputed ?? 0}` +
+        (payload?.durationMs ? ` in ${payload.durationMs}ms.` : ".");
+
+      setRunMessage(summary);
+      window.location.reload();
+    } catch {
+      setRunMessage("Matching run failed due to a network or server error.");
+    } finally {
+      setIsRunningMatch(false);
+    }
+  }
 
   const recommendationColumns = useMemo(
     () => [
@@ -220,6 +267,30 @@ export function AdminMatchingView({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Matching Engine</h2>
+            <p className="text-sm text-gray-500">
+              Recompute recommendation and application ML scores using the latest data.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleRunMatching}
+            disabled={isRunningMatch}
+            className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRunningMatch ? "Running..." : "Run Matching Now"}
+          </button>
+        </div>
+
+        {runMessage ? (
+          <p className="mt-3 text-sm text-gray-700">{runMessage}</p>
+        ) : null}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3">

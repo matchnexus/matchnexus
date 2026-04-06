@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import {
+  recomputeApplicationScoresForPost,
+  recomputeStudentFeedRecommendations,
+} from "@/server/ml/matching";
 
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
@@ -46,6 +50,12 @@ export async function POST(req: NextRequest) {
       cvUrl,
     },
   });
+
+  // Keep matching outputs fresh as soon as a new application is submitted.
+  await Promise.all([
+    recomputeApplicationScoresForPost(postId),
+    recomputeStudentFeedRecommendations(student.id),
+  ]);
 
   return NextResponse.json(application);
 }

@@ -105,6 +105,11 @@ export default function CompanyLoginPage() {
         if (data.company.id) {
           localStorage.setItem("companyId", data.company.id);
         }
+        if (data.company.logoUrl) {
+          localStorage.setItem("companyLogoUrl", data.company.logoUrl);
+        } else {
+          localStorage.removeItem("companyLogoUrl");
+        }
         localStorage.setItem(
           "companyEmail",
           data.company.corporateEmail || form.email

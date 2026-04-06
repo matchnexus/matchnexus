@@ -1,248 +1,248 @@
 "use client";
 
-import { Badge, Card, Pagination } from "flowbite-react";
-import { useState, useEffect, useMemo } from "react";
+import { Badge, Card, Button } from "flowbite-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
 import {
-  HiSearch,
-  HiOutlineLocationMarker,
-  HiOutlineBriefcase,
+  HiArrowLeft,
+  HiBriefcase,
+  HiLocationMarker,
+  HiClock,
+  HiCheckCircle,
+  HiLightningBolt,
 } from "react-icons/hi";
+import { useSession } from "next-auth/react";
 
-export default function JobsPage() {
-  const [allJobs, setAllJobs] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const jobsPerPage = 9;
+type Props = { params: { id: string } };
 
-  // 1. Input fields වල අගයන් තියාගන්න states
-  const [searchInput, setSearchInput] = useState("");
-  const [categoryInput, setCategoryInput] = useState("All Categories");
+export default function JobDetailsPage({ params }: Props) {
+  const { data: session } = useSession();
+  const [job, setJob] = useState<any>(null);
+  console.log(session?.user?.id);
+  const handleApply = async () => {
+    try {
+      const res = await fetch("/api/student/apply", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          postId: params.id,
+          coverLetter: "",
+        }),
+      });
 
-  // 2. Button එක click කළාම filter වෙන්න ඕන අගයන් තියාගන්න states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("All Categories");
+      const data = await res.json();
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await fetch("/api/jobs");
-        const data = await res.json();
-        setAllJobs(data);
-      } catch (err) {
-        console.error("Failed to fetch jobs", err);
+      if (!res.ok) {
+        toast.error(data.message || "Apply failed");
+        return;
       }
-    };
-    fetchJobs();
-  }, []);
 
-  // 3. Search Button Click function එක
-  const handleSearch = () => {
-    setSearchQuery(searchInput);
-    setFilterCategory(categoryInput);
-    setCurrentPage(1); // මුල් පිටුවට reset කිරීම
+      toast.success("Applied Successfully!");
+    } catch (err) {
+      toast.error("Something went wrong");
+    }
   };
 
-  // 4. Filter Logic (දැන් වැඩ කරන්නේ searchQuery සහ filterCategory මතයි)
-  const filteredJobs = useMemo(() => {
-    return allJobs.filter((job) => {
-      const matchesSearch =
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (job.company?.companyName &&
-          job.company.companyName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
-
-      const matchesCategory =
-        filterCategory === "All Categories" || job.category === filterCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [allJobs, searchQuery, filterCategory]);
-
-  const onPageChange = (page: number) => setCurrentPage(page);
-  const startIndex = (currentPage - 1) * jobsPerPage;
-  const selectedJobs = filteredJobs.slice(startIndex, startIndex + jobsPerPage);
-
-  const heroImages = [
-    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80",
-    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80",
-    "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&q=80",
-  ];
-  const [currentSlide, setCurrentSlide] = useState(0);
-
+  // ✅ Fetch job by ID
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
+    const fetchJob = async () => {
+      try {
+        const res = await fetch(`/api/jobs/${params.id}`);
+        const data = await res.json();
+        setJob(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchJob();
+  }, [params.id]);
+
+  // ✅ Loading state
+  if (!job) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-white pb-10 font-sans -mx-4 -mt-6">
-      <section className="relative bg-sky-700 py-20 px-6 text-center overflow-hidden">
-        {/* ── Carousel background ── */}
-        {heroImages.map((img, i) => (
-          <div
-            key={i}
-            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-            style={{
-              backgroundImage: `url(${img})`,
-              opacity: currentSlide === i ? 1 : 0,
-            }}
-          />
-        ))}
+    <div className="min-h-screen bg-[#F4F7FA] py-10 px-4 md:px-8 font-sans">
+      <div className="mx-auto max-w-6xl space-y-6">
+        {/* Navigation - Back Button */}
+        <Link
+          href="/auth/student/jobs"
+          className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-xs uppercase tracking-widest transition-all w-max group"
+        >
+          <HiArrowLeft className="transition-transform group-hover:-translate-x-1" />
+          Back to Explorations
+        </Link>
 
-        {/* your existing overlay — unchanged */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent opacity-50" />
-
-        {/* your existing content — unchanged */}
-        <div className="relative z-10 mx-auto max-w-4xl">
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 text-4xl font-extrabold text-white md:text-5xl tracking-tight"
-          >
-            Find Your Dream Career
-          </motion.h1>
-          <p className="mb-10 text-lg text-white/90 font-medium max-w-2xl mx-auto">
-            Discover smart ML-powered internship opportunities curated for your
-            success.
-          </p>
-
-          <div className="mx-auto flex flex-col items-center gap-3 rounded-2xl bg-white p-3 shadow-xl md:flex-row max-w-5xl">
-            <div className="flex w-full items-center px-4 md:w-2/4">
-              <HiSearch className="text-xl text-gray-400 mr-2" />
-              <input
-                type="text"
-                placeholder="Job title, keywords..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full border-none focus:ring-0 text-gray-700 text-sm placeholder:text-gray-400"
-              />
+        {/* Header Section Card */}
+        <div className="rounded-[2.5rem] bg-white p-8 shadow-sm border border-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-5">
+            <div className="bg-gradient-to-br from-blue-500 to-cyan-400 p-4 rounded-[1.5rem] text-white shadow-lg shadow-blue-100">
+              <HiBriefcase size={36} />
             </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                {/* ✅ Title */}
+                <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">
+                  {job.title}
+                </h1>
 
-            <div className="hidden h-8 w-px bg-gray-200 md:block"></div>
+                {/* ✅ Work Type */}
+                <Badge
+                  color="info"
+                  className="px-3 py-1 rounded-full uppercase text-[9px] font-black tracking-widest bg-blue-50 text-blue-600 border-none"
+                >
+                  {job.workType || "Internship"}
+                </Badge>
+              </div>
 
-            <div className="flex w-full items-center px-4 md:w-1/4">
-              <HiOutlineBriefcase className="mr-2 text-xl text-gray-400" />
-              <select
-                value={categoryInput}
-                onChange={(e) => setCategoryInput(e.target.value)}
-                className="w-full border-none bg-transparent focus:ring-0 text-gray-600 text-sm font-semibold"
-              >
-                <option value="All Categories">All Categories</option>
-                <option value="COMPUTING">COMPUTING</option>
-                <option value="BUSINESS">BUSINESS</option>
-                <option value="ENGINEERING">ENGINEERING</option>
-              </select>
+              <div className="flex flex-wrap items-center gap-4 text-slate-400 text-sm font-bold uppercase tracking-wider">
+                {/* ✅ Company */}
+                <span className="flex items-center gap-1.5">
+                  <HiLightningBolt className="text-yellow-400" />{" "}
+                  {job.company?.companyName}
+                </span>
+
+                <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block"></span>
+
+                {/* ✅ Location */}
+                <span className="flex items-center gap-1.5">
+                  <HiLocationMarker /> {job.location || "Remote"}
+                </span>
+
+                <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block"></span>
+
+                {/* ✅ Duration */}
+                <span className="flex items-center gap-1.5">
+                  <HiClock /> {job.durationMonths} Months
+                </span>
+              </div>
             </div>
-
-            <button
-              onClick={handleSearch}
-              className="w-full rounded-xl bg-lime-500 px-8 py-3 text-sm font-extrabold text-white transition-all hover:bg-lime-400 md:w-auto shadow-lg"
-            >
-              SEARCH
-            </button>
-          </div>
-
-          {/* Dot indicators */}
-          <div className="flex justify-center gap-2 mt-6">
-            {heroImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  currentSlide === i ? "w-6 bg-white" : "w-2 bg-white/40"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Grid සහ Pagination පෙර පරිදිම... */}
-      <div className="mx-auto mt-16 max-w-7xl px-6">
-        <div className="mb-12 flex items-end justify-between border-b border-gray-100 pb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">
-              Latest <span className="text-sky-600">Opportunities</span>
-            </h2>
-            <p className="text-gray-500 mt-1 font-medium">
-              Showing {selectedJobs.length} of {filteredJobs.length} available
-              roles
-            </p>
           </div>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {selectedJobs.length > 0 ? (
-            selectedJobs.map((job, index) => (
-              <motion.div
-                key={job.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <Card className="group border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-white h-full">
-                  <div className="flex flex-col h-full">
-                    <div className="flex justify-between items-start mb-5">
-                      <div className="p-3 bg-sky-50 rounded-xl text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors duration-300">
-                        <HiOutlineBriefcase className="text-2xl" />
-                      </div>
-                      <Badge className="rounded-full px-3 py-1 font-bold text-[10px] bg-lime-100 text-lime-700 border border-lime-200 uppercase">
-                        {job.workType || "Internship"}
-                      </Badge>
-                    </div>
+        {/* Details Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Description */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="rounded-[2.5rem] border-none shadow-sm bg-white p-4">
+              <div className="space-y-8">
+                {/* Description */}
+                <div>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <span className="w-2 h-4 bg-blue-500 rounded-full"></span>{" "}
+                    Role Overview
+                  </h3>
 
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-sky-600 transition-colors leading-tight mb-2">
-                      {job.title}
-                    </h3>
+                  {/* ✅ Description */}
+                  <p className="text-slate-600 leading-relaxed font-medium">
+                    {job.description}
+                  </p>
+                </div>
 
-                    <div className="space-y-2 mb-6">
-                      <p className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
-                        {job.company?.companyName || "Verified Company"}
-                      </p>
-                      <p className="flex items-center gap-1 text-sm font-medium text-gray-500">
-                        <HiOutlineLocationMarker className="text-sky-500 text-lg" />
-                        {job.location || "Remote"}
-                      </p>
-                    </div>
+                {/* Responsibilities */}
+                <div>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <span className="w-2 h-4 bg-[#87D01A] rounded-full"></span>{" "}
+                    Key Responsibilities
+                  </h3>
 
-                    <div className="mt-auto pt-5 border-t border-gray-50 flex justify-end">
-                      <Link
-                        href={`/auth/student/jobs/${job.id}`}
-                        className="w-full sm:w-auto"
+                  <ul className="space-y-3">
+                    {job.responsibilities
+                      ?.split(",")
+                      .map((item: string, index: number) => (
+                        <li
+                          key={index}
+                          className="flex items-start gap-3 text-slate-600 text-sm font-medium"
+                        >
+                          <HiCheckCircle
+                            className="text-blue-500 mt-0.5 flex-shrink-0"
+                            size={18}
+                          />
+                          {item}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+
+                {/* Requirements (kept static as your design) */}
+                <div>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <span className="w-2 h-4 bg-[#87D01A] rounded-full"></span>{" "}
+                    Key Requirements
+                  </h3>
+                  <ul className="space-y-3">
+                    {[
+                      "Collaborate with cross-functional teams to define and design new features.",
+                      "Write clean, maintainable, and efficient code.",
+                      "Assist in troubleshooting and resolving software defects.",
+                      "Participate in code reviews and team meetings.",
+                    ].map((item, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-3 text-slate-600 text-sm font-medium"
                       >
-                        <button className="w-full rounded-lg bg-gray-900 px-6 py-2.5 text-xs font-bold text-white hover:bg-sky-600 transition-all shadow-sm uppercase tracking-wider">
-                          Apply Now
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-gray-400 font-bold uppercase">
-                No matching jobs found.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {filteredJobs.length > jobsPerPage && (
-          <div className="mt-20 flex items-center justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredJobs.length / jobsPerPage)}
-              onPageChange={onPageChange}
-              showIcons
-              className="font-semibold text-sky-600"
-            />
+                        <HiCheckCircle
+                          className="text-blue-500 mt-0.5 flex-shrink-0"
+                          size={18}
+                        />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Card>
           </div>
-        )}
+
+          {/* Right Side */}
+          <div className="space-y-6">
+            <Card className="rounded-[2rem] border-none shadow-sm bg-white overflow-hidden p-2">
+              <div className="p-4 space-y-6">
+                {/* Tech stack (static) */}
+                <div>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                    Tech Stack
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {["Next.js", "TypeScript", "Tailwind", "Git"].map((tag) => (
+                      <span
+                        key={tag}
+                        className="bg-slate-50 text-slate-700 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border border-slate-100"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Apply */}
+                <div className="pt-4 space-y-3">
+                  <Button
+                    onClick={handleApply}
+                    className="w-full bg-blue-600 enabled:hover:bg-blue-700 rounded-xl font-bold py-2 shadow-lg shadow-blue-100 border-none uppercase tracking-widest text-xs"
+                  >
+                    Apply
+                  </Button>
+
+                  {/* ✅ Dynamic deadline */}
+                  <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">
+                    Hurry!{" "}
+                    {Math.ceil(
+                      (new Date(job.applicationDeadline).getTime() -
+                        new Date().getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    )}{" "}
+                    days left
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

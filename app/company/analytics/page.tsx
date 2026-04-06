@@ -69,7 +69,7 @@ export default function CompanyAnalyticsPage() {
       <div className="rounded-2xl border border-blue-100 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Track post performance, engagement, and candidate activity from this area.
+          Ranked applicants are computed from the uploaded CV, profile skills, and post requirements.
         </p>
       </div>
 
