@@ -1,6 +1,9 @@
 ﻿"use client";
 
+<<<<<<< HEAD
+=======
 <<<<<<< Updated upstream
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -358,7 +361,10 @@ function CourseDetail({
   );
 }
 
+<<<<<<< HEAD
+=======
 <<<<<<< Updated upstream
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
 function StatusBadge({ status }: { status: "in_progress" | "not_started" | "completed" }) {
   const map = {
     completed:   "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -513,6 +519,8 @@ export default function StudentCoursesHub() {
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">{label}</p>
                   <p className="text-xl font-black text-gray-900">{value}</p>
+<<<<<<< HEAD
+=======
 =======
 // ── Tab views ─────────────────────────────────────────────────────────────────
 function BrowseTab({ onOpen }: { onOpen: (c: Course) => void }) {
@@ -630,11 +638,15 @@ function ScheduleTab({ onOpen }: { onOpen: (c: Course) => void }) {
                     Open
                   </button>
 >>>>>>> Stashed changes
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
                 </div>
               </div>
             ))}
           </div>
+<<<<<<< HEAD
+=======
 <<<<<<< Updated upstream
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
 
           {/* Featured banner */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 p-5 shadow-lg">
@@ -795,6 +807,10 @@ function ScheduleTab({ onOpen }: { onOpen: (c: Course) => void }) {
             )
           )}
         </div>
+<<<<<<< HEAD
+      </div>
+    </>
+=======
       </div>
     </>
 =======
@@ -879,5 +895,6 @@ export default function StudentCoursesHub() {
       </div>
     </div>
 >>>>>>> Stashed changes
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
   );
 }

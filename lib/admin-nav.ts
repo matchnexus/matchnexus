@@ -11,7 +11,10 @@ import {
 } from "react-icons/hi";
 
 export const adminNavItems = [
+<<<<<<< HEAD
+=======
 <<<<<<< Updated upstream
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
   { label: "Dashboard",     href: "/admin",                icon: HiChartBar },
   { label: "Students",      href: "/admin/students",       icon: HiUsers },
   { label: "Companies",     href: "/admin/companies",      icon: HiOfficeBuilding },
@@ -21,6 +24,8 @@ export const adminNavItems = [
   { label: "Courses",       href: "/admin/courses",        icon: HiAcademicCap },
   { label: "Matching",      href: "/admin/matching",       icon: HiSparkles },
   { label: "Payments",      href: "/admin/payments",       icon: HiCreditCard },
+<<<<<<< HEAD
+=======
 =======
   {
     label: "Dashboard",
@@ -68,4 +73,5 @@ export const adminNavItems = [
     icon: HiCreditCard,
   },
 >>>>>>> Stashed changes
+>>>>>>> cc99c214bab67cb9fb7291429e7bb732576f63e9
 ];
