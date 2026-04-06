@@ -67,7 +67,7 @@ export default function JobsPage() {
               <HiOutlineBriefcase className="mr-2 text-xl text-gray-400" />
               <select className="w-full border-none bg-transparent focus:ring-0 text-gray-600 text-sm font-semibold">
                 <option>All Categories</option>
-                <option>Computing</option>
+                <option>IT</option>
                 <option>Business</option>
                 <option>Engineering</option>
               </select>

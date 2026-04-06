@@ -79,6 +79,16 @@ const toLineItems = (value?: string | null) => {
     .filter(Boolean);
 };
 
+const formatCategoryLabel = (value?: string | null) => {
+  const normalized = (value || "").trim().toUpperCase();
+
+  if (normalized === "IT" || normalized === "COMPUTING") return "IT";
+  if (normalized === "BUSINESS") return "Business";
+  if (normalized === "ENGINEERING") return "Engineering";
+
+  return value || "Not specified";
+};
+
 export default function CompanyPostsPage() {
   const searchParams = useSearchParams();
   const updatedPostId = searchParams.get("updated") || "";
@@ -382,6 +392,10 @@ export default function CompanyPostsPage() {
                 <p>
                   <span className="font-semibold text-gray-900">Duration:</span>{" "}
                   {post.durationMonths ? `${post.durationMonths} months` : "Not specified"}
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-900">Category:</span>{" "}
+                  {formatCategoryLabel(post.category)}
                 </p>
               </div>
 
