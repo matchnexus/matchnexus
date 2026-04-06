@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { adminNavItems } from "@/lib/admin-nav";
+<<<<<<< Updated upstream
 import { useState, useEffect } from "react";
 import {
   HiChevronDown,
@@ -16,8 +17,16 @@ import {
 } from "react-icons/hi";
 
 const LOGO_URL = "/photos/logo.png";
+=======
+import { HiX } from "react-icons/hi";
+>>>>>>> Stashed changes
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
@@ -51,6 +60,7 @@ export function AdminSidebar() {
     setIsMobileOpen(false);
   }, [pathname]);
 
+<<<<<<< Updated upstream
   return (
     <>
       {isMobileOpen && (
@@ -93,6 +103,35 @@ export function AdminSidebar() {
             <Link
               href="/admin"
               className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-background-soft to-background-base shadow-md transition-all duration-300 hover:scale-105"
+=======
+  const navContent = (
+    <>
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-blue-600">MatchNexus</p>
+          <h2 className="text-lg font-bold text-gray-900">Admin Panel</h2>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-gray-100 transition lg:hidden">
+            <HiX className="h-5 w-5 text-gray-500" />
+          </button>
+        )}
+      </div>
+
+      <nav className="space-y-1 p-4">
+        {adminNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={clsx(
+                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition",
+                isActive ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"
+              )}
+>>>>>>> Stashed changes
             >
               {LOGO_URL ? (
                 <Image
@@ -106,6 +145,7 @@ export function AdminSidebar() {
                 <span className="text-sm font-bold text-white">MN</span>
               )}
             </Link>
+<<<<<<< Updated upstream
           )}
 
           <button
@@ -328,6 +368,30 @@ export function AdminSidebar() {
       >
         <HiMenu className="h-5 w-5" />
       </button>
+=======
+          );
+        })}
+      </nav>
+>>>>>>> Stashed changes
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-gray-200 bg-white lg:block">
+        {navContent}
+      </aside>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+          <aside className="absolute inset-y-0 left-0 w-72 border-r border-gray-200 bg-white shadow-xl">
+            {navContent}
+          </aside>
+        </div>
+      )}
     </>
   );
 }

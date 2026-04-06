@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import StudentCoursesHub from "@/components/student/courses";
 import StudentPaymentHub from "@/components/student/payment";
+<<<<<<< Updated upstream
 import {
   HiAcademicCap,
   HiCreditCard,
@@ -17,6 +18,9 @@ import {
 } from "react-icons/hi";
 
 const MANAGE_PIN = "admin2024";
+=======
+import StudentHubNavbar from "@/components/student/StudentHubNavbar";
+>>>>>>> Stashed changes
 
 type HubTab = "courses" | "payment";
 
@@ -32,6 +36,7 @@ export default function StudentHubPage() {
   const [pinError, setPinError] = useState(false);
   const router = useRouter();
 
+<<<<<<< Updated upstream
   // Hidden shortcut: Ctrl+Shift+M
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -223,6 +228,24 @@ export default function StudentHubPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+=======
+  return (
+    <div className="min-h-screen bg-[#F4F7FA] font-sans">
+      <StudentHubNavbar activeTab={tab} onTabChange={setTab} />
+
+      <main className="mx-auto max-w-7xl px-4 py-10 md:px-8">
+        {tab === "courses" && (
+          <div className="rounded-[2rem] bg-white/90 p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
+            <StudentCoursesHub />
+          </div>
+        )}
+        {tab === "payment" && (
+          <div className="rounded-[2rem] bg-white/90 p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
+            <StudentPaymentHub />
+          </div>
+        )}
+      </main>
+>>>>>>> Stashed changes
     </div>
   );
 }

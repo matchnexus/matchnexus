@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useEffect } from "react";
 import {
@@ -16,7 +16,7 @@ const MOCK_TX: TxItem[] = [
   { id: "tx-1018", date: "2025-01-15", label: "Platform access (student)", amount: "LKR 0.00", raw: 0, status: "Free" },
 ];
 
-const sidebarItems = [
+const sidebarItems: { id: PaymentTab; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: HiCash },
   { id: "history", label: "History", icon: HiDocumentText },
   { id: "methods", label: "Payment methods", icon: HiCreditCard },
@@ -590,7 +590,7 @@ export default function StudentPaymentHub() {
       {showPayModal && <PayNowModal onClose={() => setShowPayModal(false)} />}
       {showAddCard && <AddCardModal onClose={() => setShowAddCard(false)} />}
 
-      <div className="space-y-5 rounded-3xl border border-blue-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-md lg:p-6">
+      <div className="space-y-5 rounded-3xl border border-blue-200/60 p-5 shadow-lg backdrop-blur-md lg:p-6" style={{ background: "rgba(219,234,254,0.45)" }}>
         {/* Tab bar — icon card style matching courses */}
         <div className="flex gap-2">
           {sidebarItems.map(({ id, label, icon: Icon }) => {
@@ -600,7 +600,7 @@ export default function StudentPaymentHub() {
                 className={`group flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-3 py-4 text-xs font-bold transition-all duration-200 ${
                   active
                     ? "bg-gradient-to-br from-blue-500/25 to-cyan-500/15 border border-blue-400/35 text-slate-800 shadow-lg shadow-blue-500/10"
-                    : "border border-blue-200 bg-white/80 text-slate-500 hover:bg-blue-50 hover:text-slate-800"
+                    : "border border-blue-200/60 bg-white/50 text-slate-600 hover:bg-white/70 hover:text-slate-800"
                 }`}>
                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
                   active ? "bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-md shadow-blue-500/30" : "bg-white/10 text-slate-400 group-hover:bg-blue-50"
@@ -631,7 +631,7 @@ export default function StudentPaymentHub() {
                   <HiCheckCircle className="h-4 w-4" /> Account in good standing
                 </span>
               </div>
-              <div className="rounded-2xl border border-blue-100 bg-white/70 p-6 space-y-3">
+              <div className="rounded-2xl border border-blue-200/50 p-6 space-y-3" style={{ background: "rgba(255,255,255,0.55)" }}>
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Quick actions</p>
                 <button onClick={() => setShowPayModal(true)}
                   className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-md hover:from-blue-500 hover:to-cyan-400 transition">
@@ -657,30 +657,35 @@ export default function StudentPaymentHub() {
 
         {/* ── History ── */}
         {activeTab === "history" && (
-          <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white/70">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-blue-100">
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800">Recent activity</h3>
+          <div className="overflow-hidden rounded-2xl border border-blue-200/50 shadow-sm" style={{ background: "rgba(255,255,255,0.75)" }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-blue-100" style={{ background: "rgba(219,234,254,0.5)" }}>
+              <h3 className="text-sm font-black uppercase tracking-wide text-gray-800">Recent activity</h3>
               <InvoiceDownloadMenu txList={transactions} />
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[580px] text-left text-sm">
-                <thead className="text-[10px] font-black uppercase tracking-wider text-slate-500 bg-blue-50/60">
+                <thead className="text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-blue-100" style={{ background: "rgba(219,234,254,0.4)" }}>
                   <tr>
                     {["Reference", "Date", "Description", "Amount", "Status", "Invoice"].map((h) => (
                       <th key={h} className="px-6 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-blue-50">
-                  {transactions.map((row) => (
-                    <tr key={row.id} className="text-slate-700 hover:bg-blue-50/40 transition">
-                      <td className="px-6 py-4 font-mono text-xs text-slate-500">{row.id}</td>
-                      <td className="px-6 py-4 text-xs">{row.date}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-800">{row.label}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-800">{row.amount}</td>
+                <tbody className="divide-y divide-blue-50/60">
+                  {transactions.map((row, idx) => (
+                    <tr key={row.id} className="text-slate-700 transition"
+                      style={{ background: idx % 2 === 0 ? "rgba(255,255,255,0.85)" : "rgba(219,234,254,0.5)" }}>
+                      <td className="px-6 py-4 font-mono text-xs text-gray-400">{row.id}</td>
+                      <td className="px-6 py-4 text-xs text-gray-600">{row.date}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-800">{row.label}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-800">{row.amount}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center rounded-lg border px-2 py-0.5 text-[10px] font-black uppercase ${
-                          row.status === "Free" ? "border-slate-500/30 bg-slate-500/20 text-slate-400" : "border-blue-400/30 bg-blue-500/15 text-blue-300"
+                        <span className={`inline-flex items-center rounded-lg border px-2.5 py-0.5 text-[10px] font-black uppercase ${
+                          row.status === "Free"
+                            ? "border-slate-200 bg-slate-100 text-slate-600"
+                            : row.status === "Paid"
+                            ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                            : "border-amber-200 bg-amber-100 text-amber-700"
                         }`}>{row.status}</span>
                       </td>
                       <td className="px-6 py-4"><SingleInvoiceMenu tx={row} /></td>
