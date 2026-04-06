@@ -126,7 +126,6 @@ export default function StudentJobsPage() {
                 className="w-full border-none text-lg font-medium text-gray-700 placeholder:text-gray-300 focus:ring-0"
               />
             </div>
-<<<<<<< HEAD
 
             <div className="hidden h-10 w-px bg-gray-200 md:block"></div>
 
@@ -141,18 +140,6 @@ export default function StudentJobsPage() {
                 <option value="COMPUTING">Computing</option>
                 <option value="BUSINESS">Business</option>
                 <option value="ENGINEERING">Engineering</option>
-=======
-            
-            <div className="hidden h-8 w-px bg-gray-200 md:block"></div>
-            
-            <div className="flex w-full items-center px-4 md:w-1/4">
-              <HiOutlineBriefcase className="mr-2 text-xl text-gray-400" />
-              <select className="w-full border-none bg-transparent focus:ring-0 text-gray-600 text-sm font-semibold">
-                <option>All Categories</option>
-                <option>IT</option>
-                <option>Business</option>
-                <option>Engineering</option>
->>>>>>> f9c3bd6af80a5ea35207a0b42f0c0c9e3c0b22fa
               </select>
             </div>
 
