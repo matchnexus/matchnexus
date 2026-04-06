@@ -81,6 +81,26 @@ const toLineItems = (value?: string | null) => {
     .filter(Boolean);
 };
 
+const normalizeCategoryLabel = (value?: string | null) => {
+  const normalized = (value || "").trim().toUpperCase();
+
+  if (normalized === "COMPUTING" || normalized === "IT") return "IT";
+  if (normalized === "BUSINESS") return "BUSINESS";
+  if (normalized === "ENGINEERING") return "ENGINEERING";
+
+  return normalized;
+};
+
+const formatCategoryLabel = (value?: string | null) => {
+  const normalized = normalizeCategoryLabel(value);
+
+  if (normalized === "IT") return "IT";
+  if (normalized === "BUSINESS") return "Business";
+  if (normalized === "ENGINEERING") return "Engineering";
+
+  return value || "";
+};
+
 export default function CompanyDashboardPage() {
   const searchParams = useSearchParams();
   const publishedPostId = searchParams.get("published") || "";
@@ -186,7 +206,7 @@ export default function CompanyDashboardPage() {
   const activePosts = posts.filter((p) => p.status === "ACTIVE");
   const filteredPosts = activePosts.filter((post) => {
     const normalizedTitle = post.title.toLowerCase();
-    const normalizedCategory = (post.category || post.workType || "").toLowerCase();
+    const normalizedCategory = normalizeCategoryLabel(post.category || post.workType);
     const normalizedLocation = (post.location || "").toLowerCase();
     const normalizedDescription = (post.description || "").toLowerCase();
 
@@ -198,7 +218,7 @@ export default function CompanyDashboardPage() {
 
     const matchesCategory =
       !appliedCategory ||
-      normalizedCategory.includes(appliedCategory.toLowerCase());
+      normalizedCategory === normalizeCategoryLabel(appliedCategory);
 
     const matchesLocation =
       !appliedLocation ||
@@ -224,9 +244,9 @@ export default function CompanyDashboardPage() {
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-cyan-500"
           >
             <option value="">All categories</option>
-            <option value="computing">IT</option>
-            <option value="business">Business</option>
-            <option value="engineering">Engineering</option>
+            <option value="IT">IT</option>
+            <option value="BUSINESS">Business</option>
+            <option value="ENGINEERING">Engineering</option>
           </select>
           <input
             value={searchLocation}
@@ -336,7 +356,7 @@ export default function CompanyDashboardPage() {
           <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
             <span className="font-bold uppercase tracking-wide text-cyan-700">Filtered results</span>
             {appliedKeyword && <Badge color="info" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedKeyword}</Badge>}
-            {appliedCategory && <Badge color="success" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedCategory}</Badge>}
+            {appliedCategory && <Badge color="success" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{formatCategoryLabel(appliedCategory)}</Badge>}
             {appliedLocation && <Badge color="warning" className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{appliedLocation}</Badge>}
             <button
               type="button"
