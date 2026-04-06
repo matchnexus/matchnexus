@@ -27,6 +27,7 @@ export async function PUT(req: NextRequest) {
     const linkedin = formData.get("linkedin") as string | null;
     const skillsRaw = formData.get("skills") as string | null; // JSON array of skill names
     const cvFile = formData.get("cvFile") as File | null;
+    const photoFile = formData.get("photoFile") as File | null;
 
     // ── Basic validation ───────────────────────────────────────────────────
     if (!studentId || !firstName || !institute || !department || !degreeType) {
@@ -94,16 +95,13 @@ export async function PUT(req: NextRequest) {
         }
       }
 
-      // 3. Handle CV / Resume upload ────────────────────────────────────────
       let resumeRecord = null;
 
       if (cvFile && cvFile.size > 0) {
-        // ── Save file to disk (or swap for S3/Cloudinary as needed) ──────
         const bytes = await cvFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
         const fileName = `${updatedStudent.id}_${Date.now()}_${cvFile.name}`;
 
-        // Example: save to /public/resumes/ (adjust path as needed)
         const { writeFile, mkdir } = await import("fs/promises");
         const { join } = await import("path");
 
@@ -113,7 +111,6 @@ export async function PUT(req: NextRequest) {
         const filePath = join(uploadDir, fileName);
         await writeFile(filePath, buffer);
 
-        // Store the public path in the DB
         const publicPath = `/resumes/${fileName}`;
 
         resumeRecord = await tx.resume.create({
@@ -123,8 +120,31 @@ export async function PUT(req: NextRequest) {
           },
         });
       }
+      // 4. Handle profile photo upload ─────────────────────────────────────────
+      if (photoFile && photoFile.size > 0) {
+        const bytes = await photoFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const ext = photoFile.name.split(".").pop() || "jpg";
+        const fileName = `${updatedStudent.id}_${Date.now()}.${ext}`;
 
-      return { student: updatedStudent, resume: resumeRecord };
+        const { writeFile, mkdir } = await import("fs/promises");
+        const { join } = await import("path");
+
+        const uploadDir = join(process.cwd(), "public", "avatars");
+        await mkdir(uploadDir, { recursive: true });
+        await writeFile(join(uploadDir, fileName), buffer);
+
+        await tx.student.update({
+          where: { id: updatedStudent.id },
+          data: { profilePhotoUrl: `/avatars/${fileName}` },
+        });
+      }
+
+      return {
+        student: updatedStudent,
+        resume: resumeRecord,
+        photoSaved: !!(photoFile && photoFile.size > 0),
+      };
     });
 
     await recomputeStudentFeedRecommendations(result.student.id);
