@@ -19,7 +19,7 @@ export default function CompanyNavbar() {
     { name: "jobs", href: "/auth/student/jobs" },
     { name: "Profile", href: "/auth/student/user" },
     { name: "suggestions", href: "/auth/student/suggestions" },
-    { name: "courses", href: "#" },
+    { name: "courses", href: "/student/hub" },
       { name: "applications", href: "/auth/student/applications" }
   ];
 
