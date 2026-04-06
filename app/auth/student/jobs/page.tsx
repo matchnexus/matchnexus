@@ -97,6 +97,21 @@ export default function StudentJobsPage() {
     return ["All", ...Array.from(unique).sort((a, b) => a.localeCompare(b))];
   }, [jobs]);
 
+  const heroImages = [
+    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80",
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80",
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80",
+    "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1600&q=80",
+  ];
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   const startIndex = (currentPage - 1) * jobsPerPage;
   const selectedJobs = filteredJobs.slice(startIndex, startIndex + jobsPerPage);
 
@@ -106,8 +121,24 @@ export default function StudentJobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-10 font-sans">
-      <div className="bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-16 text-center shadow-inner">
-        <div className="mx-auto max-w-4xl">
+      <div className="relative bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-16 text-center shadow-inner overflow-hidden">
+        {/* Carousel background */}
+        {heroImages.map((img, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${img})`,
+              opacity: currentSlide === i ? 1 : 0,
+            }}
+          />
+        ))}
+
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-blue-900/60" />
+
+        {/* Existing content — unchanged */}
+        <div className="relative z-10 mx-auto max-w-4xl">
           <h1 className="mb-3 text-4xl font-black uppercase tracking-tight text-white">
             Explore All Internships
           </h1>
@@ -157,6 +188,19 @@ export default function StudentJobsPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Dot indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {heroImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  currentSlide === i ? "w-6 bg-white" : "w-2 bg-white/40"
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -222,7 +266,10 @@ export default function StudentJobsPage() {
                   </div>
 
                   <div className="mt-8 flex items-center justify-between border-t border-gray-50 pt-5">
-                    <Badge color="info" className="rounded-full px-2.5 py-1 text-[10px] font-black uppercase">
+                    <Badge
+                      color="info"
+                      className="rounded-full px-2.5 py-1 text-[10px] font-black uppercase"
+                    >
                       {job.category || "UNCATEGORIZED"}
                     </Badge>
                     <Link href={`/auth/student/jobs/${job.id}`}>
@@ -240,7 +287,10 @@ export default function StudentJobsPage() {
         <div className="mt-16 flex items-center justify-center">
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.max(1, Math.ceil(filteredJobs.length / jobsPerPage))}
+            totalPages={Math.max(
+              1,
+              Math.ceil(filteredJobs.length / jobsPerPage),
+            )}
             onPageChange={(page) => setCurrentPage(page)}
             showIcons
             className="font-bold"
