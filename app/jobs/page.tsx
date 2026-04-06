@@ -129,7 +129,7 @@ export default function JobsPage() {
                 className="w-full border-none bg-transparent focus:ring-0 text-gray-600 font-bold uppercase text-xs"
               >
                 <option>All Categories</option>
-                <option>Computing</option>
+                <option>IT</option>
                 <option>Business</option>
                 <option>Engineering</option>
               </select>
