@@ -15,7 +15,6 @@ type AdminNavbarProps = {
 export function AdminNavbar({ onMenuClick, isDark = false, onToggleTheme }: AdminNavbarProps) {
   const router = useRouter();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -40,13 +39,6 @@ export function AdminNavbar({ onMenuClick, isDark = false, onToggleTheme }: Admi
       setIsLoggingOut(false);
     }
   };
-
-  // Mock notifications data
-  const notifications = [
-    { id: 1, text: "New student registration", time: "5 min ago", type: "success" },
-    { id: 2, text: "Company verification pending", time: "1 hour ago", type: "warning" },
-    { id: 3, text: "System update completed", time: "3 hours ago", type: "info" },
-  ];
 
   return (
     <>
@@ -102,57 +94,15 @@ export function AdminNavbar({ onMenuClick, isDark = false, onToggleTheme }: Admi
               {isDark ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
             </button>
 
-            {/* Notifications Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className={`group relative rounded-xl p-2 transition-all duration-200 ${isDark ? "hover:bg-slate-800" : "hover:bg-gray-100"}`}
-              >
-                <HiBell className={`h-5 w-5 transition-colors ${isDark ? "text-slate-300 group-hover:text-cyan-300" : "text-gray-600 group-hover:text-blue-600"}`} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-              </button>
-
-              {/* Dropdown Menu */}
-              {showNotifications && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowNotifications(false)}
-                  />
-                  <div className={`absolute right-0 mt-2 w-80 overflow-hidden rounded-2xl border z-50 animate-in slide-in-from-top-2 duration-200 ${isDark ? "border-slate-700 bg-slate-900 shadow-2xl shadow-black/40" : "border-gray-100 bg-white shadow-xl"}`}>
-                    <div className={`border-b px-4 py-3 ${isDark ? "border-slate-700 bg-slate-800" : "border-gray-100 bg-background-soft"}`}>
-                      <h3 className={`text-sm font-semibold ${isDark ? "text-slate-100" : "text-gray-900"}`}>Notifications</h3>
-                      <p className={`mt-0.5 text-xs ${isDark ? "text-slate-400" : "text-gray-500"}`}>You have 3 new updates</p>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          className={`cursor-pointer border-b px-4 py-3 transition-colors ${isDark ? "border-slate-800 hover:bg-slate-800" : "border-gray-50 hover:bg-gray-50"}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`
-                              w-2 h-2 mt-2 rounded-full flex-shrink-0
-                              ${notif.type === 'success' ? 'bg-green-500' : 
-                                notif.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}
-                            `} />
-                            <div className="flex-1">
-                              <p className={`text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{notif.text}</p>
-                              <p className={`mt-1 text-xs ${isDark ? "text-slate-400" : "text-gray-400"}`}>{notif.time}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className={isDark ? "bg-slate-800 px-4 py-2" : "bg-gray-50 px-4 py-2"}>
-                      <button className={`w-full text-center text-xs font-medium ${isDark ? "text-cyan-300 hover:text-cyan-200" : "text-blue-600 hover:text-blue-700"}`}>
-                        View all notifications
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            <button
+              onClick={() => router.push("/admin/notifications")}
+              className={`group relative rounded-xl p-2 transition-all duration-200 ${isDark ? "hover:bg-slate-800" : "hover:bg-gray-100"}`}
+              title="Open notifications"
+              aria-label="Open notifications"
+            >
+              <HiBell className={`h-5 w-5 transition-colors ${isDark ? "text-slate-300 group-hover:text-cyan-300" : "text-gray-600 group-hover:text-blue-600"}`} />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+            </button>
 
             {/* Enhanced User Profile Card */}
             <div className="group relative">

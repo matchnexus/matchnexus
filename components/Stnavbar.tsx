@@ -4,15 +4,34 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { HiBell } from "react-icons/hi";
 
 export default function CompanyNavbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [companyName, setCompanyName] = useState("");
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     const storedName = localStorage.getItem("studentName") || "";
     setCompanyName(storedName);
+  }, []);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const res = await fetch("/api/student/notifications");
+        const data = await res.json().catch(() => null);
+
+        if (res.ok) {
+          setUnreadNotifications(data?.unreadCount ?? 0);
+        }
+      } catch {
+        setUnreadNotifications(0);
+      }
+    };
+
+    loadNotifications();
   }, []);
 
   const tabs = [
@@ -95,6 +114,19 @@ export default function CompanyNavbar() {
 
           <div className="mt-6 md:hidden">
             <Link
+              href="/auth/student/notifications"
+              onClick={() => setOpen(false)}
+              className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 px-4 py-2.5 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-50"
+            >
+              <HiBell className="h-4 w-4" />
+              Notifications
+              {unreadNotifications > 0 ? (
+                <span className="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              ) : null}
+            </Link>
+            <Link
               href="/auth/login"
               onClick={handelLogout}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
@@ -106,6 +138,19 @@ export default function CompanyNavbar() {
         </nav>
 
         <div className="hidden md:flex md:items-center md:gap-4">
+          <Link
+            href="/auth/student/notifications"
+            className="relative inline-flex items-center justify-center rounded-xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
+            aria-label="Open notifications"
+            title="Notifications"
+          >
+            <HiBell className="h-5 w-5" />
+            {unreadNotifications > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            ) : null}
+          </Link>
           <Link
             href="/auth/login"
             onClick={handelLogout}
