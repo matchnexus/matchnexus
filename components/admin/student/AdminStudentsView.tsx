@@ -301,6 +301,7 @@ export function AdminStudentsView({ students }: Props) {
             ? `Are you sure you want to delete ${deleteTarget.firstName} ${deleteTarget.lastName}? This action permanently removes student account data.`
             : "Are you sure you want to delete this student?"
         }
+        requireText="DELETE"
         confirmLabel="Delete Student"
         loading={!!deleteTarget && deletingId === deleteTarget.id}
         onCancel={() => {
