@@ -530,10 +530,9 @@ export default function UserFriendlyProfile() {
                     >
                       <option value="Computing">Computing</option>
                       <option value="Business Management">
-                        Business Management
+                        Business 
                       </option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Accounting">Accounting</option>
+                      <option value="Marketing">Engeneering</option>
                     </Select>
                   </div>
 
