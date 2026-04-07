@@ -105,9 +105,7 @@ export function StudentNotificationsView() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
-            <p className="text-sm text-gray-500">
-              Notifications published by admin will appear here. Click an unread item to mark it as read.
-            </p>
+            
           </div>
         </div>
 
