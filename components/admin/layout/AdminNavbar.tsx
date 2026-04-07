@@ -7,7 +7,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-export function AdminNavbar() {
+type AdminNavbarProps = {
+  onMenuClick?: () => void;
+};
+
+export function AdminNavbar({ onMenuClick }: AdminNavbarProps) {
   const router = useRouter();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -48,7 +52,7 @@ export function AdminNavbar() {
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-background-base/80 backdrop-blur-xl shadow-sm">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Mobile Menu Button */}
-          <button className="block lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onMenuClick} className="block lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <HiMenu className="h-5 w-5 text-gray-600" />
           </button>
 
