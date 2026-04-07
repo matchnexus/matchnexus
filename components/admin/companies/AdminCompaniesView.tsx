@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { SimpleTable } from "@/components/admin/tables/SimpleTable";
 import { StatusBadge } from "@/components/admin/shared/StatusBadge";
+import { DeleteConfirmModal } from "@/components/admin/shared/DeleteConfirmModal";
 import { formatDate } from "@/lib/format";
+import toast from "react-hot-toast";
 import {
   HiOutlineViewGrid,
   HiOutlineTable,
@@ -14,6 +16,7 @@ import {
   HiCreditCard,
   HiClock,
   HiSparkles,
+  HiTrash,
 } from "react-icons/hi";
 
 type CompanyRow = {
@@ -36,6 +39,41 @@ type Props = {
 
 export function AdminCompaniesView({ companies }: Props) {
   const [viewMode, setViewMode] = useState<"table" | "card">("card");
+  const [companyRows, setCompanyRows] = useState<CompanyRow[]>(companies);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CompanyRow | null>(null);
+
+  const openDeleteConfirm = (company: CompanyRow) => {
+    setDeleteTarget(company);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeletingId(deleteTarget.id);
+
+    try {
+      const res = await fetch(`/api/admin/companies/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        toast.error(payload?.message ?? "Failed to delete company.");
+        return;
+      }
+
+      setCompanyRows((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      toast.success("Company deleted successfully.");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Failed to delete company.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const tableColumns = useMemo(
     () => [
@@ -81,8 +119,23 @@ export function AdminCompaniesView({ companies }: Props) {
         title: "Created",
         render: (row: CompanyRow) => formatDate(row.createdAt),
       },
+      {
+        key: "actions",
+        title: "Actions",
+        render: (row: CompanyRow) => (
+          <button
+            type="button"
+            onClick={() => openDeleteConfirm(row)}
+            disabled={deletingId === row.id}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <HiTrash className="h-4 w-4" />
+            {deletingId === row.id ? "Deleting..." : "Delete"}
+          </button>
+        ),
+      },
     ],
-    []
+    [deletingId]
   );
 
   return (
@@ -126,11 +179,11 @@ export function AdminCompaniesView({ companies }: Props) {
 
       {viewMode === "table" ? (
         <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-          <SimpleTable columns={tableColumns} rows={companies} />
+          <SimpleTable columns={tableColumns} rows={companyRows} />
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {companies.map((company) => (
+          {companyRows.map((company) => (
             <div
               key={company.id}
               className="group rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl"
@@ -218,10 +271,38 @@ export function AdminCompaniesView({ companies }: Props) {
                   </span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => openDeleteConfirm(company)}
+                disabled={deletingId === company.id}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <HiTrash className="h-4 w-4" />
+                {deletingId === company.id ? "Deleting company..." : "Delete Company"}
+              </button>
             </div>
           ))}
         </div>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title="Delete Company"
+        description={
+          deleteTarget
+            ? `Are you sure you want to delete ${deleteTarget.companyName}? This action permanently removes the company and related data.`
+            : "Are you sure you want to delete this company?"
+        }
+        confirmLabel="Delete Company"
+        loading={!!deleteTarget && deletingId === deleteTarget.id}
+        onCancel={() => {
+          if (!deletingId) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

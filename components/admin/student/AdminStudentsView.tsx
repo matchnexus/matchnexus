@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { SimpleTable } from "@/components/admin/tables/SimpleTable";
 import { StatusBadge } from "@/components/admin/shared/StatusBadge";
+import { DeleteConfirmModal } from "@/components/admin/shared/DeleteConfirmModal";
 import { formatDate } from "@/lib/format";
+import toast from "react-hot-toast";
 import {
   HiOutlineViewGrid,
   HiOutlineTable,
@@ -13,6 +15,7 @@ import {
   HiDocumentText,
   HiClipboardList,
   HiSparkles,
+  HiTrash,
 } from "react-icons/hi";
 
 type StudentRow = {
@@ -38,6 +41,41 @@ type Props = {
 
 export function AdminStudentsView({ students }: Props) {
   const [viewMode, setViewMode] = useState<"table" | "card">("card");
+  const [studentRows, setStudentRows] = useState<StudentRow[]>(students);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StudentRow | null>(null);
+
+  const openDeleteConfirm = (student: StudentRow) => {
+    setDeleteTarget(student);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeletingId(deleteTarget.id);
+
+    try {
+      const res = await fetch(`/api/admin/students/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        toast.error(payload?.message ?? "Failed to delete student.");
+        return;
+      }
+
+      setStudentRows((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      toast.success("Student deleted successfully.");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Failed to delete student.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const tableColumns = useMemo(
     () => [
@@ -95,8 +133,23 @@ export function AdminStudentsView({ students }: Props) {
         title: "Joined",
         render: (row: StudentRow) => formatDate(row.createdAt),
       },
+      {
+        key: "actions",
+        title: "Actions",
+        render: (row: StudentRow) => (
+          <button
+            type="button"
+            onClick={() => openDeleteConfirm(row)}
+            disabled={deletingId === row.id}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <HiTrash className="h-4 w-4" />
+            {deletingId === row.id ? "Deleting..." : "Delete"}
+          </button>
+        ),
+      },
     ],
-    []
+    [deletingId]
   );
 
   return (
@@ -140,11 +193,11 @@ export function AdminStudentsView({ students }: Props) {
 
       {viewMode === "table" ? (
         <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-          <SimpleTable columns={tableColumns} rows={students} />
+          <SimpleTable columns={tableColumns} rows={studentRows} />
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {students.map((student) => (
+          {studentRows.map((student) => (
             <div
               key={student.id}
               className="group rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl"
@@ -225,10 +278,38 @@ export function AdminStudentsView({ students }: Props) {
                   <span>{student.applications.length} records</span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => openDeleteConfirm(student)}
+                disabled={deletingId === student.id}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <HiTrash className="h-4 w-4" />
+                {deletingId === student.id ? "Deleting student..." : "Delete Student"}
+              </button>
             </div>
           ))}
         </div>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title="Delete Student"
+        description={
+          deleteTarget
+            ? `Are you sure you want to delete ${deleteTarget.firstName} ${deleteTarget.lastName}? This action permanently removes student account data.`
+            : "Are you sure you want to delete this student?"
+        }
+        confirmLabel="Delete Student"
+        loading={!!deleteTarget && deletingId === deleteTarget.id}
+        onCancel={() => {
+          if (!deletingId) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
