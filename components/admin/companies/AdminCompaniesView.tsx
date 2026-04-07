@@ -294,6 +294,7 @@ export function AdminCompaniesView({ companies }: Props) {
             ? `Are you sure you want to delete ${deleteTarget.companyName}? This action permanently removes the company and related data.`
             : "Are you sure you want to delete this company?"
         }
+        requireText="DELETE"
         confirmLabel="Delete Company"
         loading={!!deleteTarget && deletingId === deleteTarget.id}
         onCancel={() => {

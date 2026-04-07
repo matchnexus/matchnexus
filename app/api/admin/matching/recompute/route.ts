@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { hasAdminSession } from "@/lib/admin/api-validation";
 import {
   recomputeAllMatchingData,
   recomputeApplicationScoresForPost,
@@ -16,7 +17,7 @@ type RecomputePayload = {
 
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
-  const isAdminSession = cookieStore.get("admin-login")?.value === "true";
+  const isAdminSession = hasAdminSession(cookieStore.get("admin-login")?.value);
 
   if (!isAdminSession) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
