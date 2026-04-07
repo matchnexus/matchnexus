@@ -51,6 +51,7 @@ model Student {
   payments          Payment[]
   recommendations   RecommendationScore[]
   resumes           Resume[]
+  notificationReads NotificationRead[]
   skills            StudentSkill[]
   user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -500,8 +501,40 @@ model AdminProfile {
   updatedAt   DateTime   @updatedAt
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   auditLogs   AuditLog[]
+  notifications Notification[]
 
   @@map("admin_profiles")
+}
+
+model Notification {
+  id                    String                @id @default(uuid())
+  title                 String
+  message               String
+  level                 NotificationLevel     @default(INFO)
+  audience              NotificationAudience   @default(ALL_STUDENTS)
+  publishAt             DateTime              @default(now())
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdByAdminProfileId String
+  createdByAdminProfile AdminProfile          @relation(fields: [createdByAdminProfileId], references: [id], onDelete: Cascade)
+  reads                 NotificationRead[]
+
+  @@index([audience, publishAt])
+  @@index([createdByAdminProfileId])
+  @@map("notifications")
+}
+
+model NotificationRead {
+  id            String       @id @default(uuid())
+  notificationId String
+  studentId      String
+  readAt         DateTime     @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, studentId])
+  @@index([studentId])
+  @@map("notification_reads")
 }
 
 model VerificationDocument {
@@ -680,6 +713,17 @@ enum AdminRole {
   FINANCE_ADMIN
   SUPPORT_ADMIN
   ANALYTICS_ADMIN
+}
+
+enum NotificationAudience {
+  ALL_STUDENTS
+}
+
+enum NotificationLevel {
+  INFO
+  SUCCESS
+  WARNING
+  ALERT
 }
 
 enum TicketStatus {

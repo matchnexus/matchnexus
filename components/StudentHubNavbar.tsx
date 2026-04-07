@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   HiAcademicCap,
+  HiBell,
   HiUser,
   HiBriefcase,
   HiLogout,
@@ -22,6 +23,24 @@ const navLinks = [
 export default function StudentHubNavbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const res = await fetch("/api/student/notifications");
+        const data = await res.json().catch(() => null);
+
+        if (res.ok) {
+          setUnreadNotifications(data?.unreadCount ?? 0);
+        }
+      } catch {
+        setUnreadNotifications(0);
+      }
+    };
+
+    loadNotifications();
+  }, []);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -72,6 +91,19 @@ export default function StudentHubNavbar() {
         {/* Desktop right */}
         <div className="hidden items-center gap-3 md:flex">
           <Link
+            href="/auth/student/notifications"
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-200 hover:bg-blue-100 transition"
+            aria-label="Open notifications"
+            title="Notifications"
+          >
+            <HiBell className="h-5 w-5" />
+            {unreadNotifications > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            ) : null}
+          </Link>
+          <Link
             href="/auth/student/user"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-200 hover:bg-blue-100 transition"
           >
@@ -99,6 +131,19 @@ export default function StudentHubNavbar() {
       {/* Mobile menu */}
       {open && (
         <div className="border-t border-blue-100 bg-white/90 px-6 py-4 space-y-1 md:hidden">
+          <Link
+            href="/auth/student/notifications"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-blue-50 hover:text-slate-900"
+          >
+            <HiBell className="h-4 w-4" />
+            Notifications
+            {unreadNotifications > 0 ? (
+              <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            ) : null}
+          </Link>
           {navLinks.map(({ href, label, icon: Icon, exact }) => {
             const active = isActive(href, exact);
             return (
