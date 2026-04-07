@@ -1,15 +1,15 @@
 import fs from "fs/promises";
 import path from "path";
 import { createRequire } from "module";
-import { pathToFileURL } from "url";
 
 const WORD_SPLIT = /[^a-z0-9+.#\-]+/gi;
 const require = createRequire(import.meta.url);
-let isPdfWorkerConfigured = false;
 
 function normalizeText(input: string): string {
   return input
     .toLowerCase()
+    .replace(/\bqa\b/g, "quality assurance")
+    .replace(/\bsqa\b/g, "software quality assurance")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -18,6 +18,7 @@ function normalizeSkillName(input: string): string {
   return normalizeText(input)
     .replace(/react\.js/g, "react")
     .replace(/node\.js/g, "node")
+    .replace(/quality-assurance/g, "quality assurance")
     .replace(/typescript/g, "typescript")
     .replace(/javascript/g, "javascript")
     .replace(/\bjs\b/g, "javascript")
@@ -32,27 +33,8 @@ async function readPdfText(fileBuffer: Buffer): Promise<string> {
           getText: () => Promise<{ text: string }>;
           destroy: () => Promise<void>;
         };
-        setWorker?: (workerPath: string) => string;
       };
     };
-
-    if (!isPdfWorkerConfigured && pdfParseModule.PDFParse.setWorker) {
-      const workerPath = path.join(
-        process.cwd(),
-        "node_modules",
-        "pdfjs-dist",
-        "legacy",
-        "build",
-        "pdf.worker.mjs"
-      );
-
-      try {
-        pdfParseModule.PDFParse.setWorker(pathToFileURL(workerPath).href);
-        isPdfWorkerConfigured = true;
-      } catch (workerError) {
-        console.warn("PDF worker setup failed; falling back to inline parsing:", workerError);
-      }
-    }
 
     const parser = new pdfParseModule.PDFParse({ data: new Uint8Array(fileBuffer) });
     const parsed = await parser.getText();

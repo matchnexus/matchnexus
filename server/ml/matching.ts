@@ -28,6 +28,12 @@ const SKILL_ALIASES: Record<string, string> = {
   ts: "typescript",
   nodejs: "node",
   "node.js": "node",
+  qa: "quality assurance",
+  "quality-assurance": "quality assurance",
+  "quality assurance engineer": "quality assurance",
+  "software qa": "quality assurance",
+  "manual testing": "testing",
+  "software testing": "testing",
 };
 
 const DECIMAL_TWO_DP = 100;
@@ -298,13 +304,27 @@ function getPostTextBlob(post: PostWithSkills): string {
 
 function computeTextSkillAlignmentScore(
   studentSkillMap: Map<string, ProficiencyLevel | null>,
-  post: PostWithSkills
+  post: PostWithSkills,
+  requestedSkills: Array<{ name: string; level: ProficiencyLevel | null }>
 ): number {
   const studentSkills = Array.from(studentSkillMap.keys());
   if (!studentSkills.length) return 50;
 
   const textBlob = getPostTextBlob(post);
   if (!textBlob) return 35;
+
+  const requestedSet = new Set(requestedSkills.map((skill) => skill.name));
+  if (requestedSet.size > 0) {
+    let matchedRequested = 0;
+    for (const requestedSkill of requestedSet) {
+      if (studentSkillMap.has(requestedSkill)) {
+        matchedRequested += 1;
+      }
+    }
+
+    const requestedCoverage = matchedRequested / requestedSet.size;
+    return toTwoDecimals(clamp(30 + requestedCoverage * 70, 0, 100));
+  }
 
   let matched = 0;
   for (const skill of studentSkills) {
@@ -317,7 +337,7 @@ function computeTextSkillAlignmentScore(
 
   if (matched === 0) return 20;
 
-  const ratio = matched / Math.max(studentSkills.length, 1);
+  const ratio = matched / Math.max(Math.min(studentSkills.length, 12), 1);
   return toTwoDecimals(clamp(35 + ratio * 65, 0, 100));
 }
 
@@ -386,7 +406,8 @@ export function calculateMatchScore(
   const categoryAlignmentScore = computeCategoryAlignmentScore(student, post);
   const textSkillAlignmentScore = computeTextSkillAlignmentScore(
     studentSkillMap,
-    post
+    post,
+    [...required, ...optional]
   );
   const missingRequiredPenalty = computeRequiredMissingPenalty(
     requiredResult.missing.length

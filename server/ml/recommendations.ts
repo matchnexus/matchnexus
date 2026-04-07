@@ -2,6 +2,7 @@ import { Prisma, RecommendationContext } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateMatchScore } from "@/server/ml/matching";
 import { analyzeResumeWithExternalApi } from "@/server/ml/ai";
+import { runPythonCvJobRanker } from "@/server/ml/python-recommender";
 import {
   extractResumeTextFromPath,
   extractSkillsFromResumeText,
@@ -51,6 +52,8 @@ export type StudentRecommendationRow = {
   missingOptionalSkills: string[];
   reason: string;
   resumeSkills: string[];
+  pythonScore?: number;
+  pythonConfidence?: number;
 };
 
 export type CompanyApplicantRankRow = {
@@ -77,6 +80,143 @@ export type CompanyApplicantRankRow = {
     cvSkills: string[];
   }>;
 };
+
+type RoleFamily = "qa" | "data" | "fullstack" | "frontend" | "backend" | "software";
+
+const ROLE_FAMILY_KEYWORDS: Record<RoleFamily, string[]> = {
+  qa: ["qa", "quality assurance", "test", "testing", "automation", "selenium", "cypress"],
+  data: ["data", "analyst", "analytics", "sql", "power bi", "tableau", "statistics"],
+  fullstack: ["full stack", "fullstack"],
+  frontend: ["front end", "frontend", "react", "next.js", "nextjs", "ui", "ux"],
+  backend: ["back end", "backend", "api", "node", "spring", "django", "database"],
+  software: ["software engineer", "software", "developer", "programming", "oop"],
+};
+
+const ROLE_COMPATIBILITY: Record<RoleFamily, Partial<Record<RoleFamily, number>>> = {
+  qa: {
+    qa: 1,
+    software: 0.65,
+    backend: 0.35,
+    frontend: 0.3,
+    data: 0.25,
+    fullstack: 0.2,
+  },
+  data: {
+    data: 1,
+    software: 0.55,
+    backend: 0.4,
+    frontend: 0.25,
+    fullstack: 0.3,
+    qa: 0.2,
+  },
+  fullstack: {
+    fullstack: 1,
+    frontend: 0.8,
+    backend: 0.8,
+    software: 0.7,
+    data: 0.25,
+    qa: 0.2,
+  },
+  frontend: {
+    frontend: 1,
+    fullstack: 0.85,
+    software: 0.6,
+    backend: 0.4,
+    data: 0.2,
+    qa: 0.2,
+  },
+  backend: {
+    backend: 1,
+    fullstack: 0.85,
+    software: 0.7,
+    frontend: 0.4,
+    data: 0.35,
+    qa: 0.3,
+  },
+  software: {
+    software: 1,
+    backend: 0.75,
+    frontend: 0.6,
+    fullstack: 0.7,
+    data: 0.45,
+    qa: 0.55,
+  },
+};
+
+function inferRoleFamily(text: string): RoleFamily | null {
+  const normalized = text.toLowerCase();
+  let best: RoleFamily | null = null;
+  let bestHits = 0;
+
+  (Object.keys(ROLE_FAMILY_KEYWORDS) as RoleFamily[]).forEach((family) => {
+    const hits = ROLE_FAMILY_KEYWORDS[family].reduce(
+      (count, keyword) => count + (normalized.includes(keyword) ? 1 : 0),
+      0
+    );
+    if (hits > bestHits) {
+      bestHits = hits;
+      best = family;
+    }
+  });
+
+  return bestHits > 0 ? best : null;
+}
+
+function inferRoleFamilyFromResumeIntent(resumeText: string): RoleFamily | null {
+  const normalized = resumeText.toLowerCase();
+
+  const qaIntentPatterns = [
+    /seeking[^.\n]{0,80}(quality assurance|qa|software testing)/,
+    /(quality assurance|qa)[^.\n]{0,60}(intern|internship|engineer|role)/,
+  ];
+  if (qaIntentPatterns.some((pattern) => pattern.test(normalized))) {
+    return "qa";
+  }
+
+  const dataIntentPatterns = [
+    /seeking[^.\n]{0,80}(data analyst|data analysis|analytics)/,
+    /(data analyst|analytics)[^.\n]{0,60}(intern|internship|role)/,
+  ];
+  if (dataIntentPatterns.some((pattern) => pattern.test(normalized))) {
+    return "data";
+  }
+
+  return null;
+}
+
+function inferStudentRoleFamily(
+  aiRole: string | null | undefined,
+  resumeSkills: string[],
+  resumeText: string
+): RoleFamily | null {
+  const explicitIntent = inferRoleFamilyFromResumeIntent(resumeText);
+  if (explicitIntent) {
+    return explicitIntent;
+  }
+
+  const source = `${aiRole ?? ""} ${resumeSkills.join(" ")} ${resumeText}`.trim();
+  if (!source) return null;
+  return inferRoleFamily(source);
+}
+
+function computeRoleFitAdjustment(
+  studentFamily: RoleFamily | null,
+  postTitle: string,
+  postDescription: string
+): { adjustment: number; postFamily: RoleFamily | null } {
+  if (!studentFamily) {
+    return { adjustment: 0, postFamily: null };
+  }
+
+  const postFamily = inferRoleFamily(`${postTitle} ${postDescription}`);
+  if (!postFamily) {
+    return { adjustment: 0, postFamily: null };
+  }
+
+  const compatibility = ROLE_COMPATIBILITY[studentFamily][postFamily] ?? 0.5;
+  const adjustment = Number(((compatibility - 0.5) * 24).toFixed(2));
+  return { adjustment, postFamily };
+}
 
 function buildMergedStudent(
   student: Prisma.StudentGetPayload<{ include: typeof studentInclude }>,
@@ -147,15 +287,61 @@ export async function getStudentJobRecommendations(studentUserId: string) {
     resumeSkills,
     aiAnalysis?.targetTrack ?? null
   );
+  const studentRoleFamily = inferStudentRoleFamily(
+    aiAnalysis?.targetRole,
+    resumeSkills,
+    resumeText
+  );
   const posts = await prisma.internshipPost.findMany({
     where: { status: "ACTIVE" },
     include: recommendationInclude,
     orderBy: { createdAt: "desc" },
   });
 
+  const pythonRanking = resumeText.trim()
+    ? await runPythonCvJobRanker({
+        resume_text: resumeText,
+        resume_skills: resumeSkills,
+        jobs: posts.map((post) => ({
+          id: post.id,
+          title: post.title,
+          description: post.description,
+          responsibilities: post.responsibilities,
+          keyRequirements: post.keyRequirements,
+          techStack: post.techStack,
+          requiredSkills: (post.requiredSkills ?? []).map((item) => item.skillName),
+          optionalSkills: (post.optionalSkills ?? []).map((item) => item.skillName),
+        })),
+      })
+    : null;
+
+  const pythonScoreMap = new Map(
+    (pythonRanking?.scores ?? []).map((row) => [
+      row.id,
+      {
+        pythonScore: Number(row.pythonScore),
+        confidence: Number(row.confidence),
+        reason: row.reason,
+      },
+    ])
+  );
+
   const scored = posts
     .map((post) => {
       const score = calculateMatchScore(mergedStudent as any, post as any);
+      const python = pythonScoreMap.get(post.id);
+      const hybridBaseScore = python
+        ? Number((score.overallScore * 0.65 + python.pythonScore * 0.35).toFixed(2))
+        : score.overallScore;
+      const roleFit = computeRoleFitAdjustment(
+        studentRoleFamily,
+        post.title,
+        post.description
+      );
+      const hybridScore = Math.max(
+        0,
+        Math.min(100, Number((hybridBaseScore + roleFit.adjustment).toFixed(2)))
+      );
       return {
         id: post.id,
         title: post.title,
@@ -163,15 +349,19 @@ export async function getStudentJobRecommendations(studentUserId: string) {
         location: post.location,
         workType: post.workType,
         applicationDeadline: post.applicationDeadline,
-        score: score.overallScore,
+        score: hybridScore,
         qualified: score.isRecommended,
         rank: 0,
         matchedRequiredSkills: score.matchedRequiredSkills,
         matchedOptionalSkills: score.matchedOptionalSkills,
         missingRequiredSkills: score.missingRequiredSkills,
         missingOptionalSkills: score.missingOptionalSkills,
-        reason: score.matchReasonSummary,
+        reason: python
+          ? `${score.matchReasonSummary}. Python model: ${python.reason}. Role-fit adjustment: ${roleFit.adjustment >= 0 ? "+" : ""}${roleFit.adjustment.toFixed(1)} (${studentRoleFamily ?? "unknown"} -> ${roleFit.postFamily ?? "unknown"}).`
+          : `${score.matchReasonSummary}. Role-fit adjustment: ${roleFit.adjustment >= 0 ? "+" : ""}${roleFit.adjustment.toFixed(1)} (${studentRoleFamily ?? "unknown"} -> ${roleFit.postFamily ?? "unknown"}).`,
         resumeSkills,
+        pythonScore: python?.pythonScore,
+        pythonConfidence: python?.confidence,
       } satisfies StudentRecommendationRow;
     })
     .sort((a, b) => b.score - a.score)
