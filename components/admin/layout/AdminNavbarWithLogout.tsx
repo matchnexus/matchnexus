@@ -150,7 +150,7 @@ export function AdminNavbarWithLogout() {
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900">Admin User</p>
+                  <p className="text-sm font-semibold text-gray-900">Admin</p>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     System Control
