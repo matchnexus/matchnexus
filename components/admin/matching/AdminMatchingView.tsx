@@ -172,11 +172,6 @@ export function AdminMatchingView({
         render: (row: RecommendationRow) => row.rank ?? "—",
       },
       {
-        key: "reason",
-        title: "Reason",
-        render: (row: RecommendationRow) => row.reason ?? "—",
-      },
-      {
         key: "created",
         title: "Created",
         render: (row: RecommendationRow) => formatDate(row.createdAt),
@@ -441,12 +436,6 @@ export function AdminMatchingView({
                       </div>
                     </div>
 
-                    <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                      <p className="text-sm font-medium text-gray-700">Reason</p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {row.reason ?? "—"}
-                      </p>
-                    </div>
                   </div>
                 ))}
               </div>
