@@ -21,7 +21,7 @@ export default async function AdminDashboardPage() {
   const data = await getAdminDashboardStats();
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-1">
+    <div className="admin-dashboard-canvas space-y-8 bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-1">
       <div className="rounded-3xl border border-white/60 bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 p-6 text-white shadow-xl shadow-emerald-100">
         <PageHeader
           title="Dashboard"

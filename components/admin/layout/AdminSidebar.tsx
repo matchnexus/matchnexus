@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { HiX } from "react-icons/hi";
@@ -16,13 +17,22 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
 
   const navContent = (
     <>
-      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-blue-600">MatchNexus</p>
-          <h2 className="text-lg font-bold text-gray-900">Admin Panel</h2>
-        </div>
+      <div className="relative flex h-44 items-center justify-center border-b border-gray-200 px-2">
+        <Link href="/admin" className="inline-flex items-center justify-center">
+          <Image
+            src="/photos/logo.png"
+            alt="MatchNexus"
+            width={360}
+            height={140}
+            priority
+            className="h-32 w-auto object-contain"
+          />
+        </Link>
         {onClose && (
-          <button onClick={onClose} className="rounded-lg p-1.5 transition hover:bg-gray-100 lg:hidden">
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-lg p-1.5 transition hover:bg-gray-100 lg:hidden"
+          >
             <HiX className="h-5 w-5 text-gray-500" />
           </button>
         )}
@@ -42,11 +52,13 @@ export function AdminSidebar({ mobileOpen = false, onClose }: AdminSidebarProps)
               href={item.href}
               onClick={() => onClose?.()}
               className={clsx(
-                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition",
-                isActive ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"
+                "flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 hover:text-emerald-700"
               )}
             >
-              <Icon className={clsx("h-5 w-5", isActive ? "text-blue-700" : "text-gray-500")} />
+              <Icon className={clsx("h-5 w-5", isActive ? "text-white" : "text-gray-500")} />
               <span>{item.label}</span>
             </Link>
           );
