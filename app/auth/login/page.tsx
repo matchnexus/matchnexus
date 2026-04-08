@@ -92,7 +92,7 @@ export default function LoginPage() {
       if (response.ok) {
         localStorage.setItem("studentName", result.studentName);
         toast.success("Login Success!");
-        router.push("student/jobs"); 
+        router.push("/auth/verify"); 
       } else {
         
         setErrors({ email: result.message });
