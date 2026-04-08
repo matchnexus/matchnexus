@@ -83,7 +83,7 @@ export default function UserFriendlyProfile() {
           github: student?.githubLink || "",
           linkedin: student?.linkedinLink || "",
           cvFile: null,
-          photoFile: null
+          photoFile: null,
         });
 
         if (student?.skills) {
@@ -140,10 +140,15 @@ export default function UserFriendlyProfile() {
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
-    setForm((prev) => ({ ...prev, photoFile: file }));
+
+    // Rename .jfif to .jpg so browsers render it correctly
+    const safeName = file.name.replace(/\.jfif$/i, ".jpg");
+    const safeFile = new File([file], safeName, { type: "image/jpeg" });
+
+    setForm((prev) => ({ ...prev, photoFile: safeFile }));
     const reader = new FileReader();
     reader.onload = () => setPhotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(safeFile);
   };
 
   const validateForm = () => {
@@ -311,15 +316,14 @@ export default function UserFriendlyProfile() {
                     className="relative cursor-pointer group mb-4"
                     onClick={() => photoInputRef.current?.click()}
                   >
-                    <Avatar
-                      img={
+                    <img
+                      src={
                         photoPreview ||
-                        existingPhotoUrl ||
+                        (existingPhotoUrl ? existingPhotoUrl : null) ||
                         "https://flowbite.com/docs/images/people/profile-picture-5.jpg"
                       }
-                      rounded
-                      size="lg"
-                      className="ring-4 ring-white rounded-full shadow-lg"
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-lg"
                     />
                     <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <HiCamera className="text-white w-7 h-7" />
@@ -529,9 +533,7 @@ export default function UserFriendlyProfile() {
                       }}
                     >
                       <option value="Computing">Computing</option>
-                      <option value="Business Management">
-                        Business 
-                      </option>
+                      <option value="Business Management">Business</option>
                       <option value="Marketing">Engeneering</option>
                     </Select>
                   </div>
