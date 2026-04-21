@@ -91,8 +91,9 @@ export default function StudentHubPage() {
         </div>
       )}
 
-      {/* ── Full-bleed hero with blurred photo background ── */}
-      <div className="relative min-h-[420px] w-full overflow-hidden md:min-h-[480px]">
+      {/* ── Hero with side spacing ── */}
+      <div className="px-6 pt-6 md:px-10">
+      <div className="relative min-h-[420px] w-full overflow-hidden rounded-2xl md:min-h-[480px]">
 
         {/* Background photo */}
         <div
@@ -124,7 +125,7 @@ export default function StudentHubPage() {
             </div>
             <a href="/manage"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-bold text-white/90 backdrop-blur-md hover:bg-white/25 transition">
-              ⚙ Admin
+              ⚙ Management
             </a>
           </motion.div>
 
@@ -135,7 +136,7 @@ export default function StudentHubPage() {
             transition={{ duration: 0.55, delay: 0.08 }}
             className="text-4xl font-black tracking-tight text-white md:text-5xl lg:text-6xl"
           >
-            Welcome back 👋
+            Welcome back
           </motion.h1>
 
           <motion.p
@@ -207,9 +208,10 @@ export default function StudentHubPage() {
           </motion.div>
         </div>
       </div>
+      </div>
 
       {/* ── Content area ── */}
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 md:px-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}

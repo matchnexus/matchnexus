@@ -1,151 +1,188 @@
-"use client";
+﻿"use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  HiArrowLeft, HiAcademicCap, HiClock, HiCheckCircle, HiPlay,
+  HiArrowLeft, HiAcademicCap, HiCheckCircle, HiPlay,
   HiDocumentText, HiVideoCamera, HiBookOpen, HiX, HiDownload,
-  HiLightningBolt, HiChevronRight,
+  HiLightningBolt, HiChevronRight, HiExternalLink,
 } from "react-icons/hi";
 
-const MOCK_COURSES = [
-  {
-    id: "1", title: "Full Stack Web Development", provider: "MatchNexus Learning",
-    duration: "8 weeks", progress: 30, status: "in_progress" as const,
-    description: "Master Next.js, TypeScript, and PostgreSQL. Build real-world full-stack applications from scratch.",
-    modules: [
-      {
-        id: "m1", title: "Introduction to Next.js", done: true,
-        lectures: [
-          { id: "l1", type: "video" as const, title: "What is Next.js?", duration: "12 min", url: "#" },
-          { id: "l2", type: "note" as const, title: "Next.js Core Concepts", content: "Next.js is a React framework that enables server-side rendering, static site generation, and API routes. Key features include: file-based routing, automatic code splitting, built-in CSS support, and fast refresh during development." },
-          { id: "l3", type: "video" as const, title: "Setting Up Your Project", duration: "8 min", url: "#" },
-          { id: "l4", type: "doc" as const, title: "Project Setup Guide", content: "Run `npx create-next-app@latest` to scaffold a new project. Choose TypeScript, ESLint, and Tailwind CSS when prompted. The `app/` directory uses the App Router — pages are `page.tsx` files inside folders." },
-        ],
-      },
-      {
-        id: "m2", title: "TypeScript Fundamentals", done: true,
-        lectures: [
-          { id: "l1", type: "video" as const, title: "Types & Interfaces", duration: "15 min", url: "#" },
-          { id: "l2", type: "note" as const, title: "TypeScript Cheat Sheet", content: "Key TypeScript concepts: `interface` vs `type`, generics `<T>`, union types `string | number`, optional properties `prop?`, readonly, enums, and utility types like `Partial<T>`, `Pick<T>`, `Omit<T>`." },
-        ],
-      },
-      {
-        id: "m3", title: "Database Design with PostgreSQL", done: false,
-        lectures: [
-          { id: "l1", type: "video" as const, title: "Relational Database Basics", duration: "18 min", url: "#" },
-          { id: "l2", type: "doc" as const, title: "SQL Quick Reference", content: "Essential SQL: SELECT, INSERT, UPDATE, DELETE. JOINs: INNER, LEFT, RIGHT. Indexes improve query performance. Use `EXPLAIN ANALYZE` to debug slow queries. PostgreSQL-specific: JSONB columns, full-text search, CTEs." },
-          { id: "l3", type: "video" as const, title: "Prisma ORM Setup", duration: "14 min", url: "#" },
-          { id: "l4", type: "note" as const, title: "Prisma Schema Guide", content: "Define your schema in `prisma/schema.prisma`. Use `prisma migrate dev` to apply changes. Prisma Client auto-generates type-safe queries. Relations: `@relation`, one-to-many, many-to-many with join tables." },
-        ],
-      },
-      {
-        id: "m4", title: "API Routes & Server Actions", done: false,
-        lectures: [
-          { id: "l1", type: "video" as const, title: "Building REST APIs", duration: "20 min", url: "#" },
-          { id: "l2", type: "note" as const, title: "Server Actions Guide", content: "Server Actions let you run server-side code directly from components. Mark functions with `'use server'`. They can be called from forms or event handlers. Great for mutations without building a separate API endpoint." },
-        ],
-      },
-      {
-        id: "m5", title: "Authentication & Authorization", done: false,
-        lectures: [
-          { id: "l1", type: "video" as const, title: "NextAuth.js Setup", duration: "22 min", url: "#" },
-          { id: "l2", type: "doc" as const, title: "Auth Patterns", content: "Use NextAuth.js for authentication. Configure providers (Credentials, Google, GitHub). JWT sessions are stateless. Use middleware to protect routes. Role-based access: store role in JWT token and check in middleware." },
-          { id: "l3", type: "video" as const, title: "Protecting Routes", duration: "10 min", url: "#" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2", title: "Data Structures & Algorithms", provider: "Computing Fundamentals",
-    duration: "6 weeks", progress: 0, status: "not_started" as const,
-    description: "Core CS concepts for technical interviews. Arrays, trees, graphs, sorting, and dynamic programming.",
-    modules: [
-      { id: "m1", title: "Arrays & Strings", done: false, lectures: [{ id: "l1", type: "video" as const, title: "Array Operations", duration: "16 min", url: "#" }, { id: "l2", type: "note" as const, title: "Array Patterns", content: "Two pointers, sliding window, prefix sums. Time complexity: access O(1), search O(n), insert/delete O(n). Common patterns: reverse in-place, find duplicates with hash set, merge sorted arrays." }] },
-      { id: "m2", title: "Linked Lists & Stacks", done: false, lectures: [{ id: "l1", type: "video" as const, title: "Linked List Basics", duration: "14 min", url: "#" }] },
-      { id: "m3", title: "Trees & Graphs", done: false, lectures: [{ id: "l1", type: "video" as const, title: "Tree Traversals", duration: "20 min", url: "#" }] },
-      { id: "m4", title: "Sorting Algorithms", done: false, lectures: [{ id: "l1", type: "video" as const, title: "QuickSort & MergeSort", duration: "18 min", url: "#" }] },
-      { id: "m5", title: "Dynamic Programming", done: false, lectures: [{ id: "l1", type: "video" as const, title: "DP Fundamentals", duration: "25 min", url: "#" }] },
-    ],
-  },
-  {
-    id: "3", title: "Career Readiness & Interview Skills", provider: "Professional Development",
-    duration: "3 weeks", progress: 100, status: "completed" as const,
-    description: "Resume writing, mock interviews, and professional networking strategies.",
-    modules: [
-      { id: "m1", title: "Resume & LinkedIn Optimization", done: true, lectures: [{ id: "l1", type: "video" as const, title: "Resume Best Practices", duration: "12 min", url: "#" }, { id: "l2", type: "doc" as const, title: "Resume Template", content: "Use a clean single-page format. Lead with a strong summary. Quantify achievements: 'Reduced load time by 40%'. Tailor keywords to each job description. LinkedIn: professional photo, headline with keywords, 500+ connections." }] },
-      { id: "m2", title: "Mock Interview Practice", done: true, lectures: [{ id: "l1", type: "video" as const, title: "STAR Method", duration: "10 min", url: "#" }] },
-      { id: "m3", title: "Networking & Job Search", done: true, lectures: [{ id: "l1", type: "video" as const, title: "Building Your Network", duration: "15 min", url: "#" }] },
-    ],
-  },
-];
-
-type Lecture = { id: string; type: "video" | "note" | "doc"; title: string; duration?: string; url?: string; content?: string };
+type Lecture = {
+  id: string; type: "video" | "note" | "pdf";
+  title: string; duration?: string; url?: string; content?: string;
+};
 type Module = { id: string; title: string; done: boolean; lectures: Lecture[] };
+type CourseDetail = {
+  id: string; title: string; description: string; level: string;
+  isFree: boolean; priceAmount: string; modules: Module[]; progress: number;
+};
 
+// Rich fallback content used when DB course has no modules yet
+const FALLBACK_MODULES: Record<string, Module[]> = {
+  default: [
+    {
+      id: "m1", title: "Getting Started", done: false,
+      lectures: [
+        { id: "l1", type: "video", title: "Introduction & Overview", duration: "10 min", url: "https://www.youtube.com/watch?v=ZVnjOPwW4ZA" },
+        { id: "l2", type: "note", title: "Course Notes", content: "**What You Will Learn**\n• Core concepts and fundamentals\n• Hands-on practical exercises\n• Real-world project experience\n\n**Prerequisites**\n• Basic computer knowledge\n• Willingness to learn\n\n**Tools Required**\n• A modern web browser\n• Code editor (VS Code recommended)\n• Node.js installed" },
+        { id: "l3", type: "pdf", title: "Course Syllabus", url: "/docs/syllabus.pdf", content: "Download the full course syllabus including weekly breakdown, assessment criteria, and learning outcomes." },
+      ],
+    },
+    {
+      id: "m2", title: "Core Concepts", done: false,
+      lectures: [
+        { id: "l1", type: "video", title: "Deep Dive — Core Concepts", duration: "18 min", url: "https://www.youtube.com/watch?v=843nec-IvW0" },
+        { id: "l2", type: "note", title: "Key Concepts Cheat Sheet", content: "**Fundamentals**\n• Understand the problem before coding\n• Break problems into smaller parts\n• Write clean, readable code\n\n**Best Practices**\n• Comment your code\n• Use meaningful variable names\n• Test edge cases\n\n**Common Patterns**\n• Input → Process → Output\n• Divide and conquer\n• Iterative refinement" },
+        { id: "l3", type: "pdf", title: "Reference Guide PDF", url: "/docs/reference.pdf", content: "A comprehensive reference guide covering all core concepts discussed in this module." },
+      ],
+    },
+    {
+      id: "m3", title: "Practical Application", done: false,
+      lectures: [
+        { id: "l1", type: "video", title: "Hands-on Project Walkthrough", duration: "22 min", url: "https://www.youtube.com/watch?v=30LWjhZzg50" },
+        { id: "l2", type: "note", title: "Project Notes", content: "**Project Goals**\n• Apply concepts from previous modules\n• Build something you can showcase\n• Practice debugging and problem solving\n\n**Steps**\n• Plan your approach first\n• Implement step by step\n• Test as you go\n• Refactor and improve\n\n**Submission**\n• Push to GitHub\n• Write a README\n• Record a short demo" },
+        { id: "l3", type: "pdf", title: "Project Brief PDF", url: "/docs/project-brief.pdf", content: "Full project brief with requirements, marking criteria, and submission guidelines." },
+      ],
+    },
+  ],
+};
+
+// ── Note renderer ─────────────────────────────────────────────────────────────
+function renderNoteContent(content: string) {
+  const sections: { heading: string | null; lines: string[] }[] = [];
+  let current: { heading: string | null; lines: string[] } = { heading: null, lines: [] };
+  content.split("\n").forEach((line) => {
+    if (line.startsWith("**") && line.endsWith("**")) {
+      if (current.lines.length > 0 || current.heading) sections.push(current);
+      current = { heading: line.replace(/\*\*/g, ""), lines: [] };
+    } else {
+      current.lines.push(line);
+    }
+  });
+  sections.push(current);
+  return sections.map((sec, si) => (
+    <div key={si} className={`rounded-xl border p-4 space-y-1.5 ${sec.heading ? "border-blue-100 bg-blue-50/50" : "border-gray-100 bg-gray-50"}`}>
+      {sec.heading && <p className="text-xs font-black uppercase tracking-widest text-blue-600 mb-2">{sec.heading}</p>}
+      {sec.lines.filter((l) => l.trim()).map((line, li) => {
+        if (line.startsWith("•"))
+          return (
+            <div key={li} className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+              <p className="text-sm text-slate-700 leading-relaxed">{line.replace("• ", "")}</p>
+            </div>
+          );
+        const isCode = line.includes("(") || line.includes("{") || line.includes("npm") || line.includes("npx") || line.includes("export") || line.includes("import") || line.includes("SELECT");
+        if (isCode)
+          return <p key={li} className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-mono text-green-300 break-all">{line}</p>;
+        return <p key={li} className="text-sm text-slate-700 leading-relaxed">{line}</p>;
+      })}
+    </div>
+  ));
+}
+
+// ── Lecture Panel ─────────────────────────────────────────────────────────────
 function LecturePanel({ lecture, onClose }: { lecture: Lecture; onClose: () => void }) {
-  const icons = { video: HiVideoCamera, note: HiBookOpen, doc: HiDocumentText };
+  const icons = { video: HiVideoCamera, note: HiBookOpen, pdf: HiDocumentText };
   const Icon = icons[lecture.type];
-  const colors = { video: "from-blue-600 to-cyan-500", note: "from-violet-600 to-purple-500", doc: "from-amber-500 to-orange-400" };
+  const colors = { video: "from-blue-600 to-cyan-500", note: "from-violet-600 to-purple-500", pdf: "from-amber-500 to-orange-400" };
+
+  const downloadNote = () => {
+    const text = `${lecture.title}\n${"=".repeat(lecture.title.length)}\n\n${lecture.content ?? ""}`;
+    const a = document.createElement("a");
+    a.href = "data:text/plain;charset=utf-8," + encodeURIComponent(text);
+    a.download = `${lecture.title.replace(/[^a-z0-9]/gi, "_")}.txt`;
+    a.click();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-0 backdrop-blur-sm md:items-center md:pb-4">
-      <div className="w-full max-w-2xl rounded-t-3xl md:rounded-3xl border border-white/20 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-2xl rounded-t-3xl md:rounded-3xl bg-white shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className={`bg-gradient-to-r ${colors[lecture.type]} p-5 text-white flex items-start justify-between gap-3`}>
+        <div className={`bg-gradient-to-r ${colors[lecture.type]} p-5 text-white flex items-start justify-between gap-3 shrink-0`}>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">{lecture.type === "video" ? "Video Lecture" : lecture.type === "note" ? "Study Notes" : "Document"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                {lecture.type === "video" ? "Video Lecture" : lecture.type === "note" ? "Study Notes" : "PDF Document"}
+              </p>
               <h3 className="text-base font-black">{lecture.title}</h3>
               {lecture.duration && <p className="text-xs text-white/70 mt-0.5">{lecture.duration}</p>}
             </div>
           </div>
-          <button onClick={onClose} className="rounded-xl p-2 hover:bg-white/20 transition shrink-0"><HiX className="h-5 w-5" /></button>
+          <button onClick={onClose} className="rounded-xl p-2 hover:bg-white/20 transition shrink-0">
+            <HiX className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {lecture.type === "video" && (
-            <div className="space-y-4">
-              {/* Mock video player */}
-              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 aspect-video flex items-center justify-center shadow-lg">
-                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 30% 40%, #3b82f6 0%, transparent 60%), radial-gradient(circle at 70% 60%, #06b6d4 0%, transparent 60%)" }} />
-                <div className="relative flex flex-col items-center gap-3 text-white">
-                  <button className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition backdrop-blur-sm border border-white/30">
-                    <HiPlay className="h-8 w-8 ml-1" />
-                  </button>
-                  <p className="text-sm font-semibold text-white/80">{lecture.title}</p>
-                  <p className="text-xs text-white/50">{lecture.duration}</p>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* VIDEO */}
+          {lecture.type === "video" && lecture.url && (
+            <>
+              <a href={lecture.url} target="_blank" rel="noopener noreferrer"
+                className="group relative flex w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 shadow-lg"
+                style={{ paddingTop: "56.25%" }}>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg group-hover:bg-red-500 transition">
+                    <HiPlay className="h-8 w-8 ml-1 text-white" />
+                  </div>
+                  <p className="text-sm font-bold text-white/80">{lecture.title}</p>
+                  {lecture.duration && <p className="text-xs text-white/50">{lecture.duration}</p>}
+                  <span className="mt-1 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/70 group-hover:bg-white/20 transition">
+                    Click to watch on YouTube ↗
+                  </span>
                 </div>
-              </div>
-              {/* Progress bar mock */}
-              <div className="rounded-xl bg-gray-100 p-4">
-                <div className="flex items-center justify-between text-xs font-semibold text-gray-500 mb-2">
-                  <span>0:00</span><span>{lecture.duration}</span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-gray-200">
-                  <div className="h-full w-0 rounded-full bg-blue-500" />
-                </div>
-              </div>
-            </div>
+              </a>
+              <a href={lecture.url} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-100 transition">
+                <HiExternalLink className="h-4 w-4" /> Open on YouTube
+              </a>
+            </>
           )}
 
-          {(lecture.type === "note" || lecture.type === "doc") && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">{lecture.content}</p>
+          {/* NOTES */}
+          {lecture.type === "note" && lecture.content && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+                <Icon className="h-4 w-4 text-slate-400" />
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Study Notes</span>
               </div>
-              <button className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-100 transition">
-                <HiDownload className="h-4 w-4" /> Download PDF
+              {renderNoteContent(lecture.content)}
+              <button onClick={downloadNote}
+                className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-bold text-violet-700 hover:bg-violet-100 transition">
+                <HiDownload className="h-4 w-4" /> Download Notes (.txt)
               </button>
             </div>
           )}
+
+          {/* PDF */}
+          {lecture.type === "pdf" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+                <Icon className="h-4 w-4 text-slate-400" />
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">PDF Document</span>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100">
+                  <HiDocumentText className="h-6 w-6 text-amber-600" />
+                </div>
+                <p className="font-bold text-slate-800">{lecture.title}</p>
+                <p className="text-sm text-slate-500">{lecture.content}</p>
+                {lecture.url && (
+                  <a href={lecture.url} target="_blank" rel="noopener noreferrer" download
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition shadow-sm">
+                    <HiDownload className="h-4 w-4" /> Download PDF
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
+        <div className="shrink-0 border-t border-gray-100 px-5 py-3 bg-gray-50">
           <button onClick={onClose} className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition">
             Done
           </button>
@@ -155,15 +192,57 @@ function LecturePanel({ lecture, onClose }: { lecture: Lecture; onClose: () => v
   );
 }
 
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const base = MOCK_COURSES.find((c) => c.id === id);
-  const [modules, setModules] = useState<Module[]>(base?.modules ?? []);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState<Module[]>([]);
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("guest");
 
-  if (!base) {
+  useEffect(() => {
+    const uid = localStorage.getItem("userId") || "guest";
+    setUserId(uid);
+    fetch(`/api/student/courses/${id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.course) {
+          setCourse(d.course);
+          const saved = localStorage.getItem(`course_progress_${uid}_${id}`);
+          const doneIds: string[] = saved ? JSON.parse(saved) : [];
+          const apiModules: Module[] = (d.course.modules ?? []).map((m: any) => ({
+            id: m.id,
+            title: m.title,
+            done: doneIds.includes(m.id),
+            lectures: (m.lessons ?? []).map((l: any) => ({
+              id: l.id,
+              title: l.title,
+              type: l.contentType === "VIDEO" ? "video" : l.contentType === "NOTE" ? "note" : "pdf",
+              url: l.contentUrl,
+              content: l.contentUrl,
+            })),
+          }));
+          // Use API modules if they exist, otherwise use rich fallback
+          setModules(apiModules.length > 0 ? apiModules : FALLBACK_MODULES.default);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <HiAcademicCap className="h-12 w-12 text-slate-300 animate-pulse" />
+        <p className="text-lg font-bold text-slate-600">Loading course...</p>
+      </div>
+    );
+  }
+
+  if (!course) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
         <HiAcademicCap className="h-12 w-12 text-slate-300" />
@@ -174,37 +253,42 @@ export default function CourseDetailPage() {
   }
 
   const completedCount = modules.filter((m) => m.done).length;
-  const progress = Math.round((completedCount / modules.length) * 100);
-  const toggleModule = (modId: string) => setModules((prev) => prev.map((m) => (m.id === modId ? { ...m, done: !m.done } : m)));
+  const progress = modules.length > 0 ? Math.round((completedCount / modules.length) * 100) : 0;
+
+  const toggleModule = (modId: string) => {
+    setModules((prev) => {
+      const next = prev.map((m) => m.id === modId ? { ...m, done: !m.done } : m);
+      localStorage.setItem(`course_progress_${userId}_${id}`, JSON.stringify(next.filter((m) => m.done).map((m) => m.id)));
+      return next;
+    });
+  };
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: "linear-gradient(160deg, #dbeafe 0%, #eff6ff 40%, #e0f2fe 100%)" }}>
+    <div className="min-h-screen font-sans" style={{ background: "linear-gradient(160deg, #dbeafe 0%, #eff6ff 40%, #e0f2fe 100%)" }}>
       {activeLecture && <LecturePanel lecture={activeLecture} onClose={() => setActiveLecture(null)} />}
 
-      <div className="mx-auto max-w-3xl space-y-5">
-
-        {/* Top bar */}
-        <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-700 transition">
-            <HiArrowLeft className="h-4 w-4" /> Back to Courses
-          </button>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 space-y-6">
+        {/* Back */}
+        <button onClick={() => router.back()}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-700 transition">
+          <HiArrowLeft className="h-4 w-4" /> Back to Courses
+        </button>
 
         {/* Hero card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-6 text-white shadow-xl">
           <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full bg-cyan-300/20 blur-2xl" />
           <div className="relative flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 shadow-inner">
               <HiAcademicCap className="h-7 w-7 text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70">{base.provider}</p>
-              <h1 className="mt-1 text-2xl font-black leading-tight">{base.title}</h1>
-              <p className="mt-2 text-sm text-white/80">{base.description}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-white/70">MatchNexus Learning</p>
+              <h1 className="mt-1 text-2xl font-black leading-tight">{course.title}</h1>
+              <p className="mt-2 text-sm text-white/80">{course.description}</p>
               <div className="mt-3 flex flex-wrap gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold">{course.level}</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
-                  <HiClock className="h-3.5 w-3.5" />{base.duration}
+                  {course.isFree ? "Free" : `LKR ${course.priceAmount}`}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
                   <HiLightningBolt className="h-3.5 w-3.5" />{completedCount}/{modules.length} modules done
@@ -237,7 +321,6 @@ export default function CourseDetailPage() {
               const rowBg = idx % 2 === 0 ? "rgba(255,255,255,0.9)" : "rgba(219,234,254,0.5)";
               return (
                 <div key={mod.id} style={{ background: rowBg }}>
-                  {/* Module row */}
                   <div className="flex items-center gap-4 px-5 py-4">
                     <button onClick={() => toggleModule(mod.id)}
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition-all ${
@@ -257,13 +340,17 @@ export default function CourseDetailPage() {
                     </button>
                   </div>
 
-                  {/* Expanded lectures */}
                   {isExpanded && (
                     <div className="border-t border-blue-100 px-5 pb-4 pt-3 space-y-2" style={{ background: "rgba(239,246,255,0.8)" }}>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Lectures</p>
                       {mod.lectures.map((lec) => {
                         const LecIcon = lec.type === "video" ? HiVideoCamera : lec.type === "note" ? HiBookOpen : HiDocumentText;
-                        const lecColor = lec.type === "video" ? "bg-blue-100 text-blue-600" : lec.type === "note" ? "bg-violet-100 text-violet-600" : "bg-amber-100 text-amber-600";
+                        const lecColor = lec.type === "video"
+                          ? "bg-blue-100 text-blue-600"
+                          : lec.type === "note"
+                          ? "bg-violet-100 text-violet-600"
+                          : "bg-amber-100 text-amber-600";
+                        const lecLabel = lec.type === "video" ? lec.duration : lec.type === "note" ? "Study notes" : "PDF download";
                         return (
                           <button key={lec.id} onClick={() => setActiveLecture(lec)}
                             className="flex w-full items-center gap-3 rounded-xl border border-white bg-white px-4 py-3 text-left shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
@@ -272,7 +359,7 @@ export default function CourseDetailPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-slate-800 truncate">{lec.title}</p>
-                              <p className="text-xs text-slate-400">{lec.type === "video" ? lec.duration : lec.type === "note" ? "Study notes" : "Document"}</p>
+                              <p className="text-xs text-slate-400">{lecLabel}</p>
                             </div>
                             <HiChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
                           </button>
@@ -285,7 +372,6 @@ export default function CourseDetailPage() {
             })}
           </div>
         </div>
-
       </div>
     </div>
   );
