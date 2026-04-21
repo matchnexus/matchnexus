@@ -40,7 +40,6 @@ export default function CompanyNavbar() {
     { name: "Analytics", href: "/company/analytics" },
     { name: "Posts", href: "/company/posts" },
     { name: "Settings", href: "/company/profile" },
-    { name: "Contact Us", href: "/company/contactus" },
   ];
 
   const isActive = (href: string) => {
